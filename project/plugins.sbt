@@ -1,4 +1,4 @@
-resolvers += "typesafe" at "http://repo.typesafe.com/typesafe/releases"
+resolvers += "typesafe" at "https://repo.typesafe.com/typesafe/releases"
 
 libraryDependencies += "org.scala-sbt" %% "scripted-plugin" % sbtVersion.value
 
