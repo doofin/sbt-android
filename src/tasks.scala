@@ -532,7 +532,9 @@ object Tasks extends TaskBase {
       val rc = javah.!
 
       if (rc != 0)
-        PluginFail("Failed to execute: " + (javah mkString ","))
+        PluginFail(
+          "Failed to execute: " + (javah mkString ",") + ". maybe it's not in path?"
+        )
 
       (src ** "*.h").get
     } else Seq.empty

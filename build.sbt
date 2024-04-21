@@ -2,12 +2,31 @@ val pluginVersion = "2.0.0-SNAPSHOT"
 val gradleBuildVersion = "2.0.0-SNAPSHOT"
 
 scalaVersion := "2.12.19"
+
 val androidToolsVersion = "2.3.0"
 val gradleToolingApi = "2.6"
 
 resolvers ++= Seq(
   "Google's Maven repository" at "https://dl.google.com/dl/android/maven2/"
 )
+
+name := "sbt-android"
+
+organization := "org.scala-android"
+
+version := pluginVersion
+
+scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature")
+
+sourceDirectories in Compile := baseDirectory(b => Seq(b / "src")).value
+
+scalaSource in Compile := baseDirectory(_ / "src").value
+
+scalaSource in Test := baseDirectory(_ / "test").value
+
+unmanagedBase := baseDirectory(_ / "libs").value
+
+resourceDirectory in Compile := baseDirectory(_ / "resources").value
 
 // gradle-plugin and gradle-model projects
 val model = project
@@ -112,24 +131,6 @@ val gradlebuild = project
     addSbtPlugin("org.scala-android" % "sbt-android" % pluginVersion)
   )
   .dependsOn(model % "compile-internal")
-
-name := "sbt-android"
-
-organization := "org.scala-android"
-
-version := pluginVersion
-
-scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature")
-
-sourceDirectories in Compile := baseDirectory(b => Seq(b / "src")).value
-
-scalaSource in Compile := baseDirectory(_ / "src").value
-
-scalaSource in Test := baseDirectory(_ / "test").value
-
-unmanagedBase := baseDirectory(_ / "libs").value
-
-resourceDirectory in Compile := baseDirectory(_ / "resources").value
 
 libraryDependencies ++= Seq(
   "org.ow2.asm" % "asm-all" % "5.2",
