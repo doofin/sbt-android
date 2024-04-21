@@ -1,6 +1,7 @@
 val pluginVersion = "2.0.0-SNAPSHOT"
 val gradleBuildVersion = "2.0.0-SNAPSHOT"
 
+scalaVersion := "2.12.19"
 val androidToolsVersion = "2.3.0"
 val gradleToolingApi = "2.6"
 

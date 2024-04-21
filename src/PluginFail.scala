@@ -4,7 +4,7 @@ import sbt.MessageOnlyException
 
 private[android] trait PluginFail {
   def fail[A](msg: => String): A = {
-    throw new MessageOnlyException(msg)
+    throw new MessageOnlyException("sbt-android-plugin: " + msg)
   }
   def fail[A](msg: => String, ex: Throwable): A = {
     val e = new MessageOnlyException(msg)
