@@ -4,3 +4,59 @@ sbt-test/*/*/project/auto_plugins.sbt
 sbt-test/*/*/project/build.properties
 sbt-test/*/*/*/project/build.properties
 sbt-test/*/*/*/project/auto_plugins.sbt
+
+.idea/
+
+
+js-opt-bundle.js
+log.txt
+*.class
+*.log
+package-lock.json
+
+node_modules
+
+
+# sbt specific
+project/project/
+project/metals.sbt
+.bloop/
+.metals/
+
+.cache/
+.history/
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+script/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+.idea
+.bsp
+
+.vscode/
+project/project/
+project/metals.sbt
+.bloop/
+.metals/
+
+# Emacs
+\#*
+.\#*
+.ensime
+.ensime_cache
+
+# Package Files #
+*.jar
+*.war
+*.ear
+
+# scala cli
+.bsp/
+.scala-build/
