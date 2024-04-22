@@ -79,6 +79,7 @@ trait AndroidTestSettings extends AutoPlugin {
               cachedPerEntryDefinesClassLookup(classpathEntry)
           }
 
+          // newer sbt err: overloaded method value of with alternatives:
           xsbti.compile.Setup.of(
             lookup,
             (skip in compile).value,
