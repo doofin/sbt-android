@@ -15,7 +15,13 @@ resolvers ++= Seq(
 
 version := pluginVersion
 
-scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature")
+val javaV = "1.8"
+
+val mjavacOptions: Seq[String] = Seq("-release", "8")
+// javacOptions ++= "-source" :: javaV :: "-target" :: javaV :: "-release" :: "8" :: Nil
+javacOptions ++= mjavacOptions
+
+scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature") ++ mjavacOptions
 
 sourceDirectories in Compile := baseDirectory(b => Seq(b / "src")).value
 

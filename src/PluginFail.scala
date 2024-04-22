@@ -14,6 +14,6 @@ private[android] trait PluginFail {
 }
 
 private[android] object PluginFail extends PluginFail {
-  def apply[A](msg: => String): A = fail(msg)
+  def apply[A](msg: => String, filenm: String = ""): A = fail(s"$filenm : $msg")
   def apply[A](msg: => String, ex: Throwable): A = fail(msg, ex)
 }

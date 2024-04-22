@@ -543,7 +543,7 @@ object Resources {
       bldr.processResources(aapt, aaptConfig, true)
     } catch {
       case e: com.android.ide.common.process.ProcessException =>
-        PluginFail(e.getMessage)
+        PluginFail("aapt ProcessException," + e.getMessage, "Resources.scala")
     }
   }
 
