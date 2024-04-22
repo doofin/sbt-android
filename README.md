@@ -1,7 +1,42 @@
-# Build Android Projects Using SBT #
+# sbt Android plugin #
 
-[![Build Status](https://travis-ci.org/scala-android/sbt-android.svg?branch=master)](https://travis-ci.org/scala-android/sbt-android)
-[![Latest version](https://img.shields.io/bintray/v/pfn/sbt-plugins/sbt-android.svg?maxAge=2592000)](https://bintray.com/pfn/sbt-plugins/sbt-android)
+
+## This fork updated to sbt <= 1.3.13
+run : sbt publishLocal
+
+version: 2.0.1-SNAPSHOT
+
+## example  
+in build.sbt : 
+
+```scala
+val javaV = "1.8"
+javacOptions ++= Seq("-source", javaV, "-target", javaV)
+
+resolvers ++= Seq(
+  Resolver.jcenterRepo,
+  "bintray" at "https://dl.bintray.com/piasy/maven",
+  "google repo" at "https://maven.google.com/"
+)
+
+val root = project
+  .in(file("."))
+  .enablePlugins(AndroidApp)
+  .settings(
+    dexMulti := true,
+    scalaVersion := "2.11.12",
+    platformTarget := "android-28",
+    minSdkVersion := "26",
+    libraryDependencies ++= Seq(),
+  //also add  proguardOptions and  proguardConfig 
+
+  )
+  
+
+
+  ```
+
+
 [![Join the chat at https://gitter.im/scala-android/sbt-android](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/scala-android/sbt-android?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
 [http://scala-android.org/](http://scala-android.org/)
