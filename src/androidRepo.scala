@@ -395,14 +395,20 @@ object SdkInstaller extends TaskBase {
       )
       val updates =
         repomanager.getPackages.getUpdatedPkgs.asScala.filter(_.hasRemote)
+
       if (updates.nonEmpty) {
-        log.warn(
-          "Android SDK updates available, run 'android-update' to update:"
+        val updatesV = updates
+          .map { u =>
+            val p = u.getRemote
+            p.getDisplayName
+          }
+          .mkString(",")
+
+        log.success(
+          "Android SDK updates available, run 'android-update' to update:" + updatesV
         )
-        updates.foreach { u =>
-          val p = u.getRemote
-          log.warn("    " + p.getDisplayName)
-        }
+        
+
       }
     }
     ()

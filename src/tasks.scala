@@ -853,8 +853,8 @@ object Tasks extends TaskBase {
 
     implicit val output: Converter = o
 
-    if (d()) {
-      s.log.info("Debug package does not need signing: " + a.getName)
+    val fR = if (d()) {
+      s.log.success("Debug package does not need signing: " + a.getName)
       a
     } else {
       c map { cfg =>
@@ -877,13 +877,16 @@ object Tasks extends TaskBase {
           ))).!
         }
 
-        s.log.info("Signed: " + signedApkFile.getName)
+        s.log.success("Signed: " + signedApkFile.getName)
         signedApkFile
       } getOrElse {
-        s.log.warn("Package needs signing: " + a.getName)
+        s.log.success("Package needs signing: " + a.getName)
         a
       }
     }
+
+    s.log.success("apk : \n" + a.getPath())
+    fR
   }
 
   val zipalignTaskDef = Def.task {

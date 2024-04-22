@@ -176,7 +176,7 @@ object Packaging {
       s
     )
     s.log.debug("Including predexed: " + predexed)
-    s.log.info(
+    s.log.success(
       "Packaging.scala: Packaged: %s (%s)" format (output.getName, sizeString(
         output.length
       ))
