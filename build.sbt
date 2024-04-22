@@ -1,3 +1,6 @@
+name := "sbt-android"
+organization := "org.scala-android"
+
 val pluginVersion = "2.0.1-SNAPSHOT"
 val gradleBuildVersion = pluginVersion
 
@@ -9,10 +12,6 @@ val gradleToolingApi = "2.6"
 resolvers ++= Seq(
   "Google's Maven repository" at "https://dl.google.com/dl/android/maven2/"
 )
-
-name := "sbt-android"
-
-organization := "org.scala-android"
 
 version := pluginVersion
 
@@ -27,22 +26,6 @@ scalaSource in Test := baseDirectory(_ / "test").value
 unmanagedBase := baseDirectory(_ / "libs").value
 
 resourceDirectory in Compile := baseDirectory(_ / "resources").value
-
-libraryDependencies ++= Seq(
-  "org.ow2.asm" % "asm-all" % "5.2",
-  "com.google.code.findbugs" % "jsr305" % "3.0.2" % "compile-internal",
-  "org.javassist" % "javassist" % "3.22.0-GA",
-  "com.android.tools.build" % "builder" % androidToolsVersion,
-  "com.android.tools.build" % "manifest-merger" % "25.3.0",
-  "org.bouncycastle" % "bcpkix-jdk15on" % "1.59",
-  "com.android.tools.build" % "gradle-core" % androidToolsVersion excludeAll
-    ExclusionRule(organization = "net.sf.proguard"),
-  "com.android.tools.lint" % "lint" % "25.3.0",
-//  "com.android.tools.external.com-intellij" % "uast" % "145.597.4", // because google didn't sync the correct version...
-  "io.argonaut" %% "argonaut" % "6.2.3",
-  "net.orfjackal.retrolambda" % "retrolambda" % "2.5.3",
-  "org.scalaz" %% "scalaz-core" % "7.2.20"
-)
 
 aggregate := false
 
@@ -66,18 +49,21 @@ licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 
 bintrayOrganization in bintray := None
 
-pomExtra :=
-  <scm>
-    <url>git@github.com:scala-android/sbt-android.git</url>
-    <connection>scm:git:git@github.com:scala-android/sbt-android.git</connection>
-  </scm>
-    <developers>
-      <developer>
-        <id>pfnguyen</id>
-        <name>Perry Nguyen</name>
-        <url>https://github.com/pfn</url>
-      </developer>
-    </developers>
+libraryDependencies ++= Seq(
+  "org.ow2.asm" % "asm-all" % "5.2",
+  "com.google.code.findbugs" % "jsr305" % "3.0.2" % "compile-internal",
+  "org.javassist" % "javassist" % "3.22.0-GA",
+  "com.android.tools.build" % "builder" % androidToolsVersion,
+  "com.android.tools.build" % "manifest-merger" % "25.3.0",
+  "org.bouncycastle" % "bcpkix-jdk15on" % "1.59",
+  "com.android.tools.build" % "gradle-core" % androidToolsVersion excludeAll
+    ExclusionRule(organization = "net.sf.proguard"),
+  "com.android.tools.lint" % "lint" % "25.3.0",
+//  "com.android.tools.external.com-intellij" % "uast" % "145.597.4", // because google didn't sync the correct version...
+  "io.argonaut" %% "argonaut" % "6.2.3",
+  "net.orfjackal.retrolambda" % "retrolambda" % "2.5.3",
+  "org.scalaz" %% "scalaz-core" % "7.2.20"
+)
 
 scriptedLaunchOpts ++= Seq(
   "-Xmx1024m",
@@ -116,3 +102,16 @@ scriptedDependencies := {
   }
 }
 scriptedDependencies := (scriptedDependencies dependsOn publishLocal).value
+
+pomExtra :=
+  <scm>
+    <url>git@github.com:scala-android/sbt-android.git</url>
+    <connection>scm:git:git@github.com:scala-android/sbt-android.git</connection>
+  </scm>
+    <developers>
+      <developer>
+        <id>pfnguyen</id>
+        <name>Perry Nguyen</name>
+        <url>https://github.com/pfn</url>
+      </developer>
+    </developers>
