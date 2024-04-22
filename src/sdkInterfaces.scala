@@ -12,11 +12,12 @@ import sbt.{Fork, ForkOptions, Logger}
 
 import collection.JavaConverters._
 
-/**
-  * @author pfnguyen
+/** @author
+  *   pfnguyen
   */
 
-case class SbtAndroidProgressIndicator(log: Logger) extends ProgressIndicatorAdapter {
+case class SbtAndroidProgressIndicator(log: Logger)
+    extends ProgressIndicatorAdapter {
   override def logError(s: String, e: Throwable) = {
     log.error(s)
     if (e != null)
@@ -32,13 +33,14 @@ case class SbtAndroidProgressIndicator(log: Logger) extends ProgressIndicatorAda
   override def logInfo(s: String) = log.debug(s)
 }
 
-case class PrintingProgressIndicator(showProgress: Boolean = true) extends ProgressIndicatorAdapter {
+case class PrintingProgressIndicator(showProgress: Boolean = true)
+    extends ProgressIndicatorAdapter {
   val SPINNER =
-    "|"  ::
-    "/"  ::
-    "-"  ::
-    "\\" ::
-    Nil
+    "|" ::
+      "/" ::
+      "-" ::
+      "\\" ::
+      Nil
   var counter = 0
   var text = Option.empty[String]
   var secondary = Option.empty[String]
@@ -48,9 +50,9 @@ case class PrintingProgressIndicator(showProgress: Boolean = true) extends Progr
 
   override def getFraction = fraction
   override def setFraction(v: Double) = {
-    progress = Some(f"${v*100}%3.0f%%")
+    progress = Some(f"${v * 100}%3.0f%%")
     indeterminate = false
-    if ((v*100).toInt != (fraction*100).toInt) {
+    if ((v * 100).toInt != (fraction * 100).toInt) {
       printProgress()
       if (v == 1.0 && showProgress)
         println()
@@ -62,14 +64,14 @@ case class PrintingProgressIndicator(showProgress: Boolean = true) extends Progr
     printProgress()
   }
   override def setText(s: String) = {
-    val newtext =  Option(s).filter(_.trim.nonEmpty)
+    val newtext = Option(s).filter(_.trim.nonEmpty)
     if (newtext != text) {
       text = newtext
       printProgress()
     }
   }
   override def setSecondaryText(s: String) = {
-    val newtext =  Option(s).filter(_.trim.nonEmpty)
+    val newtext = Option(s).filter(_.trim.nonEmpty)
     if (secondary != newtext) {
       secondary = newtext
       printProgress()
@@ -84,7 +86,8 @@ case class PrintingProgressIndicator(showProgress: Boolean = true) extends Progr
     } else {
       progress.getOrElse(f"${0}%3d%%")
     }
-    val indicator = secondary.fold(text.getOrElse(""))(s => text.getOrElse("") + " / " + s)
+    val indicator =
+      secondary.fold(text.getOrElse(""))(s => text.getOrElse("") + " / " + s)
     if (showProgress)
       print(f"${indicator.take(72)}%-72s $prog%6s\r")
   }
@@ -104,16 +107,16 @@ object NullLogger extends ILogger {
 
 case class SbtDebugLogger(lg: Logger) extends ILogger {
   override def verbose(fmt: java.lang.String, args: Object*) {
-    lg.debug(String.format(fmt, args:_*))
+    lg.debug(String.format(fmt, args: _*))
   }
   override def info(fmt: java.lang.String, args: Object*) {
-    lg.debug(String.format(fmt, args:_*))
+    lg.debug(String.format(fmt, args: _*))
   }
   override def warning(fmt: java.lang.String, args: Object*) {
-    lg.debug(String.format(fmt, args:_*))
+    lg.debug(String.format(fmt, args: _*))
   }
   override def error(t: Throwable, fmt: java.lang.String, args: Object*) {
-    lg.debug(String.format(fmt, args:_*))
+    lg.debug(String.format(fmt, args: _*))
     if (t != null)
       lg.trace(t)
   }
@@ -122,23 +125,25 @@ case class SbtILogger() extends ILogger {
   def apply(log: Logger) = this.log = Some(log)
   private[this] var log: Option[Logger] = None
   override def verbose(fmt: java.lang.String, args: Object*) {
-    log.foreach(_.debug(String.format(fmt, args:_*)))
+    log.foreach(_.debug(String.format(fmt, args: _*)))
   }
   override def info(fmt: java.lang.String, args: Object*) {
-    log.foreach(_.debug(String.format(fmt, args:_*)))
+    log.foreach(_.debug(String.format(fmt, args: _*)))
   }
   override def warning(fmt: java.lang.String, args: Object*) {
-    log.foreach(_.warn(String.format(fmt, args:_*)))
+    log.foreach(_.warn(String.format(fmt, args: _*)))
   }
   override def error(t: Throwable, fmt: java.lang.String, args: Object*) {
-    log.foreach { l => l.error(String.format(fmt, args: _*))
+    log.foreach { l =>
+      l.error(String.format(fmt, args: _*))
       if (t != null)
         l.trace(t)
     }
   }
 }
 
-case class SbtProcessOutputHandler(lg: Logger) extends BaseProcessOutputHandler {
+case class SbtProcessOutputHandler(lg: Logger)
+    extends BaseProcessOutputHandler {
   override def handleOutput(processOutput: ProcessOutput) = {
     processOutput match {
       case p: BaseProcessOutput =>
@@ -154,17 +159,27 @@ case class SbtProcessOutputHandler(lg: Logger) extends BaseProcessOutputHandler 
 
 object SbtJavaProcessExecutor extends JavaProcessExecutor {
   import language.existentials
-  override def execute(javaProcessInfo: JavaProcessInfo, processOutputHandler: ProcessOutputHandler) = {
+  override def execute(
+      javaProcessInfo: JavaProcessInfo,
+      processOutputHandler: ProcessOutputHandler
+  ) = {
     val outputStrategy = Some(processOutputHandler match {
       case SbtProcessOutputHandler(logger) => sbt.LoggedOutput(logger)
-      case _ => sbt.CustomOutput(processOutputHandler.createOutput.getStandardOutput)
+      case _ =>
+        sbt.CustomOutput(processOutputHandler.createOutput.getStandardOutput)
     })
-    val options = ForkOptions(
-      envVars = javaProcessInfo.getEnvironment.asScala.map { case ((x, y)) => x -> y.toString }.toMap,
-      outputStrategy = outputStrategy,
-      runJVMOptions = javaProcessInfo.getJvmArgs.asScala ++
-        ("-cp" :: javaProcessInfo.getClasspath :: Nil))
-    val args = (javaProcessInfo.getMainClass :: Nil) ++ javaProcessInfo.getArgs.asScala
+    val options =
+      ForkOptions()
+        .withEnvVars(javaProcessInfo.getEnvironment.asScala.map {
+          case ((x, y)) => x -> y.toString
+        }.toMap)
+        .withOutputStrategy(outputStrategy)
+        .withRunJVMOptions(
+          javaProcessInfo.getJvmArgs.asScala.toVector ++ ("-cp" :: javaProcessInfo.getClasspath :: Nil)
+        )
+
+    val args =
+      (javaProcessInfo.getMainClass :: Nil) ++ javaProcessInfo.getArgs.asScala
     val r = Fork.java(options, args)
 
     new ProcessResult {
@@ -188,7 +203,8 @@ object SbtJavaProcessExecutor extends JavaProcessExecutor {
   }
 }
 
-case class SbtAndroidErrorReporter() extends ErrorReporter(ErrorReporter.EvaluationMode.STANDARD) {
+case class SbtAndroidErrorReporter()
+    extends ErrorReporter(ErrorReporter.EvaluationMode.STANDARD) {
   private[this] var log = Option.empty[Logger]
   def apply(l: Logger) = log = Some(l)
 
@@ -205,7 +221,6 @@ case class SbtAndroidErrorReporter() extends ErrorReporter(ErrorReporter.Evaluat
       errorStringBuilder.append(message.getToolName.get).append(": ")
     }
     errorStringBuilder.append(message.getText).append("\n")
-
 
     val messageString = errorStringBuilder.toString
 
@@ -225,11 +240,18 @@ case class SbtAndroidErrorReporter() extends ErrorReporter(ErrorReporter.Evaluat
     }
   }
 
-  override def handleIssue(data: String, `type`: Int, severity: Int, msg: String) = {
+  override def handleIssue(
+      data: String,
+      `type`: Int,
+      severity: Int,
+      msg: String
+  ) = {
     if (severity == SyncIssue.SEVERITY_WARNING) {
       log.foreach(_.warn(s"android sync: data=$data, type=${`type`}, msg=$msg"))
     } else if (severity == SyncIssue.SEVERITY_ERROR) {
-      log.foreach(_.error(s"android sync: data=$data, type=${`type`}, msg=$msg"))
+      log.foreach(
+        _.error(s"android sync: data=$data, type=${`type`}, msg=$msg")
+      )
     }
     new SyncIssue {
       override def getType = `type`

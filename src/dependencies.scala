@@ -9,21 +9,25 @@ import BuildOutput._
 import com.android.builder.dependency.level2.AndroidDependency
 import com.android.builder.model.{AndroidLibrary, JavaLibrary, MavenCoordinates}
 import com.android.manifmerger.ManifestProvider
+import sbt.internal.BuildStructure
 
 object Dependencies {
   // excludes are temporary until everything/one uses libraryDependencies
   // and only one version of the support libs
   def artifacts(m: ModuleID, name: String, exttype: String): ModuleID =
-    m.artifacts(Artifact(name, exttype, exttype)) exclude (
-      "com.google.android", "support-v4") exclude (
-      "com.google.android", "support-v13")
+    m.artifacts(
+      Artifact(name, exttype, exttype)
+    ) exclude ("com.google.android", "support-v4") exclude ("com.google.android", "support-v13")
 
-  def apklib(m: ModuleID): ModuleID            = artifacts(m, m.name, "apklib")
-  def aar(m: ModuleID): ModuleID               = artifacts(m, m.name, "aar")
+  def apklib(m: ModuleID): ModuleID = artifacts(m, m.name, "apklib")
+  def aar(m: ModuleID): ModuleID = artifacts(m, m.name, "aar")
   def apklib(m: ModuleID, n: String): ModuleID = artifacts(m, n, "apklib")
-  def aar(m: ModuleID, n: String): ModuleID    = artifacts(m, n, "aar")
+  def aar(m: ModuleID, n: String): ModuleID = artifacts(m, n, "aar")
 
-  trait LibraryDependency extends AndroidLibrary with ManifestProvider with Pkg {
+  trait LibraryDependency
+      extends AndroidLibrary
+      with ManifestProvider
+      with Pkg {
     import com.android.SdkConstants._
     def layout: ProjectLayout
 
@@ -66,7 +70,8 @@ object Dependencies {
 
     override def isProvided = false
 
-    override def getJavaDependencies: java.util.List[JavaLibrary] = List.empty.asJava
+    override def getJavaDependencies: java.util.List[JavaLibrary] =
+      List.empty.asJava
 
     override def isSkipped = false
   }
@@ -76,11 +81,19 @@ object Dependencies {
     def target = path
     import com.android.SdkConstants._
 
-    override def asAndroidDependency = Some(AndroidDependency.createLocalTestedAarLibrary(getJarFile, pkg, base.getAbsolutePath, base))
+    override def asAndroidDependency = Some(
+      AndroidDependency.createLocalTestedAarLibrary(
+        getJarFile,
+        pkg,
+        base.getAbsolutePath,
+        base
+      )
+    )
 
     // apklib are always ant-style layouts
     override lazy val layout = ProjectLayout.Ant(base)
-    lazy val pkg: String = XML.loadFile(getManifest).attribute("package").head.text
+    lazy val pkg: String =
+      XML.loadFile(getManifest).attribute("package").head.text
 
     override def getJniFolder = layout.libs
     override def getSymbolFile = layout.rTxt
@@ -88,28 +101,50 @@ object Dependencies {
   }
   def moduleIdFile(path: File) = path / "sbt-module-id"
   case class AarLibrary(base: File) extends LibraryDependency with Pkg {
-    override def asAndroidDependency = Some(AndroidDependency.createExplodedAarLibrary(getJarFile, moduleID.asMavenCoordinates, pkg, base.getAbsolutePath, base))
+    override def asAndroidDependency = Some(
+      AndroidDependency.createExplodedAarLibrary(
+        getJarFile,
+        moduleID.asMavenCoordinates,
+        pkg,
+        base.getAbsolutePath,
+        base
+      )
+    )
     lazy val moduleID: ModuleID = {
       val mfile = moduleIdFile(path)
-      val parts = IO.readLines(mfile).headOption.fold(PluginFail(
-       s"Failed to load ModuleID info from $mfile; extracted aar is corrupted"
-      ))(_.split(":"))
+      val parts = IO
+        .readLines(mfile)
+        .headOption
+        .fold(
+          PluginFail(
+            s"Failed to load ModuleID info from $mfile; extracted aar is corrupted"
+          )
+        )(_.split(":"))
       if (parts.length < 3)
-        PluginFail(s"Failed to read ModuleID info from $mfile; extracted aar is corrupted")
+        PluginFail(
+          s"Failed to read ModuleID info from $mfile; extracted aar is corrupted"
+        )
       parts(0) % parts(1) % parts(2)
     }
     override lazy val layout = new ProjectLayout.Ant(base) {
       override def jniLibs = getJniFolder
     }
     override def getJniFolder = path / "jni"
-    lazy val pkg: String = XML.loadFile(getManifest).attribute("package").head.text
+    lazy val pkg: String =
+      XML.loadFile(getManifest).attribute("package").head.text
   }
 
-  case class LibraryProject(layout: ProjectLayout, extraRes: Seq[File], extraAssets: Seq[File])
-                           (implicit output: BuildOutput.Converter) extends LibraryDependency with Pkg {
+  case class LibraryProject(
+      layout: ProjectLayout,
+      extraRes: Seq[File],
+      extraAssets: Seq[File]
+  )(implicit output: BuildOutput.Converter)
+      extends LibraryDependency
+      with Pkg {
 
     override def asAndroidDependency = None
-    lazy val pkg: String = XML.loadFile(getManifest).attribute("package").head.text
+    lazy val pkg: String =
+      XML.loadFile(getManifest).attribute("package").head.text
     override def getSymbolFile = layout.rTxt
     override def getJarFile = layout.classesJar
     override def getProguardRules = layout.proguardTxt
@@ -136,15 +171,18 @@ object Dependencies {
       (lib, other) match {
         case (l @ AarLibrary(_), LibEquals(r @ AarLibrary(_))) ⇒
           l.moduleID == r.moduleID
-        case (l @ LibraryProject(_,_,_), LibEquals(r @ LibraryProject(_,_,_))) ⇒
+        case (
+              l @ LibraryProject(_, _, _),
+              LibEquals(r @ LibraryProject(_, _, _))
+            ) ⇒
           l.path.getCanonicalFile == r.path.getCanonicalFile
         case _ ⇒ false
       }
     }
 
     override def hashCode(): Int = lib match {
-      case a@AarLibrary(_) => a.moduleID.hashCode
-      case _ => lib.getFolder.hashCode
+      case a @ AarLibrary(_) => a.moduleID.hashCode
+      case _                 => lib.getFolder.hashCode
     }
   }
 
@@ -153,7 +191,9 @@ object Dependencies {
   }
 
   object LibraryProject {
-    def apply(base: File)(implicit m: BuildOutput.Converter = new BuildOutput.AndroidOutput(_)): LibraryProject =
+    def apply(base: File)(implicit
+        m: BuildOutput.Converter = new BuildOutput.AndroidOutput(_)
+    ): LibraryProject =
       LibraryProject(ProjectLayout(base), Nil, Nil)
   }
 
@@ -161,10 +201,11 @@ object Dependencies {
     def pkg: String
   }
   object AutoLibraryProject {
-    def apply(path: File)(implicit m: BuildOutput.Converter) = new AutoLibraryProject(path)
+    def apply(path: File)(implicit m: BuildOutput.Converter) =
+      new AutoLibraryProject(path)
   }
   class AutoLibraryProject(path: File)(implicit m: BuildOutput.Converter)
-  extends LibraryProject(ProjectLayout(path), Nil, Nil) {
+      extends LibraryProject(ProjectLayout(path), Nil, Nil) {
     override def equals(obj: scala.Any): Boolean = obj match {
       case l: LibraryProject =>
         l.path.getCanonicalFile == path.getCanonicalFile
@@ -172,14 +213,6 @@ object Dependencies {
     }
 
     override def hashCode(): Int = path.getCanonicalFile.hashCode
-  }
-
-  @deprecated("`dependsOn(project)` now adds transitive settings automatically", "1.7.0")
-  implicit class RichProject(val project: Project) extends AnyVal {
-    @deprecated("use `enablePlugins(AndroidApp).dependsOn(deps)`", "1.7.0")
-    def androidBuildWith(deps: ProjectReference*): Project = {
-      project.enablePlugins(AndroidApp).dependsOn(deps map { x => x: ClasspathDep[ProjectReference] }: _*)
-    }
   }
 
   implicit class ModuleIDOps(id: ModuleID) {
@@ -190,43 +223,55 @@ object Dependencies {
       val partsMatch = parts zip otherParts forall partMatches
       partsMatch && (
         parts.length == otherParts.length ||
-        (parts.length < otherParts.length) && parts.lastOption.exists(_ == "+")
+          (parts.length < otherParts.length) && parts.lastOption.exists(
+            _ == "+"
+          )
       )
     }
 
     def matches(other: ModuleID) = {
       id.organization == other.organization && id.name == other.name &&
-        revMatches(other.revision)
+      revMatches(other.revision)
     }
 
     def asMavenCoordinates: MavenCoordinates = new MavenCoordinates {
       override def getVersion = id.revision
       override def getGroupId = id.organization
 
-      override def getClassifier = id.explicitArtifacts.collect {
-        case a if a.classifier.nonEmpty => a.classifier.get
-      }.headOption.orNull
+      override def getClassifier = id.explicitArtifacts
+        .collect {
+          case a if a.classifier.nonEmpty => a.classifier.get
+        }
+        .headOption
+        .orNull
 
       override lazy val getVersionlessId: String =
-        id.organization + ":" + id.name + Option(getClassifier).fold("")(":" + _)
+        id.organization + ":" + id.name + Option(getClassifier).fold("")(
+          ":" + _
+        )
       override def getPackaging = "jar"
       override def getArtifactId = id.name
     }
   }
 
-  implicit class ProjectRefOps(project: ProjectRef)(implicit struct: BuildStructure) {
+  implicit class ProjectRefOps(project: ProjectRef)(implicit
+      struct: BuildStructure
+  ) {
     def resolved: Option[ResolvedProject] = Project.getProject(project, struct)
 
-    def deps: Seq[ProjectRef] = resolved.map(_.dependencies) getOrElse Nil map(_.project)
+    def deps: Seq[ProjectRef] =
+      resolved.map(_.dependencies) getOrElse Nil map (_.project)
 
-    def deepDeps: Seq[ProjectRef] = (deps.flatMap(_.deepDeps) :+ project).distinct
+    def deepDeps: Seq[ProjectRef] =
+      (deps.flatMap(_.deepDeps) :+ project).distinct
 
     def libraryDependencies: Seq[ModuleID] =
       (sbt.Keys.libraryDependencies in project)
         .get(struct.data)
         .getOrElse(Nil)
 
-    def dependsOn(id: ModuleID): Boolean = libraryDependencies exists(_.matches(id))
+    def dependsOn(id: ModuleID): Boolean =
+      libraryDependencies exists (_.matches(id))
   }
 }
 // vim: set ts=2 sw=2 et:

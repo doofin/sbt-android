@@ -5,8 +5,10 @@ object Tests {
     import java.io._
     import java.util.zip._
     val in = new ZipInputStream(new FileInputStream(archive))
-    val found = Stream.continually(in.getNextEntry) takeWhile (
-      _ != null) exists (e => predicate(e.getName))
+    val found =
+      Stream.continually(in.getNextEntry) takeWhile (_ != null) exists (e =>
+        predicate(e.getName)
+      )
 
     in.close()
     found
@@ -16,8 +18,9 @@ object Tests {
     import java.io._
     import java.util.zip._
     val in = new ZipInputStream(new FileInputStream(archive))
-    val found = Stream.continually(in.getNextEntry) takeWhile (
-      _ != null) map (_.getName) toList
+    val found = Stream.continually(
+      in.getNextEntry
+    ) takeWhile (_ != null) map (_.getName) toList
 
     in.close()
     found

@@ -7,10 +7,10 @@ import android.widget.FrameLayout
 import TypedResource._
 
 class MainActivity extends Activity with TypedFindView {
-    override def onCreate(b: Bundle) {
-        super.onCreate(b)
-        setContentView(R.layout.hello)
-        val layout: FrameLayout = getLayoutInflater.inflate(TR.layout.hello, null)
-        findView(TR.test_textview).setText("Hello again, world!")
-    }
+  override def onCreate(b: Bundle) {
+    super.onCreate(b)
+    setContentView(R.layout.hello)
+    val layout: FrameLayout = getLayoutInflater.inflate(TR.layout.hello, null)
+    findView(TR.test_textview).setText("Hello again, world!")
+  }
 }

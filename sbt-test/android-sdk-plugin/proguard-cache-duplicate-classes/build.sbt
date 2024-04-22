@@ -33,7 +33,6 @@ proguardCache ++=
     "scala.util.parsing.json" ::
     Nil
 
-
 javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6")
 
 showSdkProgress := false

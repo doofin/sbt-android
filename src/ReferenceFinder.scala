@@ -3,6 +3,7 @@ package android
 import javassist.util.proxy.{MethodHandler, MethodFilter, ProxyFactory}
 
 import sbt._
+import sbt.io.Using
 
 import org.objectweb.asm._
 import org.objectweb.asm.signature.SignatureVisitor
@@ -14,12 +15,23 @@ object ReferenceFinder {
 
   def apply(jar: File, prefixes: Seq[String]): Seq[String] = {
     var current: String = null
-    var map: Map[String,Set[String]] = Map.empty
+    var map: Map[String, Set[String]] = Map.empty
 
     var classesMap: Map[Class[_], AnyRef] = Map.empty
-    val classes = List(classOf[ClassVisitor], classOf[MethodVisitor], classOf[FieldVisitor], classOf[AnnotationVisitor], classOf[SignatureVisitor])
+    val classes = List(
+      classOf[ClassVisitor],
+      classOf[MethodVisitor],
+      classOf[FieldVisitor],
+      classOf[AnnotationVisitor],
+      classOf[SignatureVisitor]
+    )
     val handler = new MethodHandler {
-      override def invoke(self: AnyRef, thisMethod: Method, proceed: Method, args: Array[AnyRef]) = {
+      override def invoke(
+          self: AnyRef,
+          thisMethod: Method,
+          proceed: Method,
+          args: Array[AnyRef]
+      ) = {
         thisMethod.getName match {
           case "visit" =>
             if (args.length > 2) {
@@ -27,13 +39,14 @@ object ReferenceFinder {
               if (!(prefixes exists (current startsWith _)))
                 map += ((current, Set.empty))
             }
-          case name@("visitAnnotation"          | "visitTypeInsn"     |
-                     "visitFieldInsn"           | "visitEnum"         |
-                     "visitFormalTypeParameter" | "visitTypeVariable" |
-                     "visitClassType"           | "visitMethodInsn"   ) =>
+          case name @ ("visitAnnotation" | "visitTypeInsn" | "visitFieldInsn" |
+              "visitEnum" | "visitFormalTypeParameter" | "visitTypeVariable" |
+              "visitClassType" | "visitMethodInsn") =>
             val dep = name + "(" + (args mkString ",") + ")"
-            if ((prefixes exists (p => (dep indexOf ("," + p)) != -1)) &&
-              !(prefixes exists (current startsWith _))) {
+            if (
+              (prefixes exists (p => (dep indexOf ("," + p)) != -1)) &&
+              !(prefixes exists (current startsWith _))
+            ) {
               map = map + ((current, map(current) + dep))
             }
           case _ =>
@@ -51,7 +64,11 @@ object ReferenceFinder {
       factory.setFilter(new MethodFilter {
         override def isHandled(p1: Method): Boolean = true
       })
-      val o = factory.create(Array(classOf[Int]), Array(Opcodes.ASM4.asInstanceOf[AnyRef]), handler)
+      val o = factory.create(
+        Array(classOf[Int]),
+        Array(Opcodes.ASM4.asInstanceOf[AnyRef]),
+        handler
+      )
       (clazz, o)
     }.toMap
     classesMap(classOf[ClassVisitor]) match {
@@ -59,22 +76,24 @@ object ReferenceFinder {
         val readbuf = Array.ofDim[Byte](16384)
         val buf = new ByteArrayOutputStream
 
-        Using.fileInputStream(jar) (Using.jarInputStream(_) { jin =>
-          Iterator.continually(jin.getNextJarEntry) takeWhile (_ != null) foreach {
-            entry =>
-              if (entry.getName.endsWith(".class")) {
-                buf.reset()
-                Iterator.continually(jin.read(readbuf)) takeWhile (
-                  _ != -1) foreach (buf.write(readbuf, 0, _))
-                val r = new ClassReader(buf.toByteArray)
-                r.accept(x, 0)
-              }
-              jin.closeEntry()
+        Using.fileInputStream(jar)(Using.jarInputStream(_) { jin =>
+          Iterator.continually(
+            jin.getNextJarEntry
+          ) takeWhile (_ != null) foreach { entry =>
+            if (entry.getName.endsWith(".class")) {
+              buf.reset()
+              Iterator.continually(
+                jin.read(readbuf)
+              ) takeWhile (_ != -1) foreach (buf.write(readbuf, 0, _))
+              val r = new ClassReader(buf.toByteArray)
+              r.accept(x, 0)
+            }
+            jin.closeEntry()
           }
 
         })
     }
 
-    (map flatMap { case (k,v) => v }).toList.sortWith(_>_).distinct
+    (map flatMap { case (k, v) => v }).toList.sortWith(_ > _).distinct
   }
 }

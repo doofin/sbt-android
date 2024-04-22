@@ -1,6 +1,8 @@
 import android.Keys._
 
-android.Plugin.androidBuild
+enablePlugins(AndroidApp)
+
+scalaVersion := "2.11.11"
 
 platformTarget in Android := "android-17"
 
@@ -10,12 +12,15 @@ targetSdkVersion in Android := "19"
 
 name := "hello-multidex"
 
-resolvers += bintray.Opts.resolver.jcenter
+val googleMaven = "google-maven-repo" at "https://maven.google.com/"
+
+resolvers ++= Seq(Resolver.jcenterRepo, googleMaven)
 
 libraryDependencies ++= Seq(
-  aar("com.google.android" % "multidex" % "0.1"),
+  aar("com.android.support" % "multidex" % "1.0.3"),
   aar("com.google.android.gms" % "play-services" % "4.0.30"),
-  aar("com.android.support" % "support-v4" % "20.0.0")
+  aar("com.android.support" % "support-v4" % "20.0.0"),
+  "com.google.code.gson" % "gson" % "2.8.5"
 )
 
 useProguard in Android := false
@@ -44,13 +49,15 @@ dexMainClasses in Android := Seq(
   "android/support/multidex/ZipUtil.class"
 )
 
-packagingOptions in Android := PackagingOptions(excludes = Seq(
-  "META-INF/MANIFEST.MF",
-  "META-INF/LICENSE.txt",
-  "META-INF/LICENSE",
-  "META-INF/NOTICE.txt",
-  "META-INF/NOTICE"
-))
+packagingOptions in Android := PackagingOptions(excludes =
+  Seq(
+    "META-INF/MANIFEST.MF",
+    "META-INF/LICENSE.txt",
+    "META-INF/LICENSE",
+    "META-INF/NOTICE.txt",
+    "META-INF/NOTICE"
+  )
+)
 
 javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6")
 

@@ -1,16 +1,19 @@
 package android
+
 import java.io.File
 import java.util.Properties
 
-/**
-  * @author pfnguyen
+import sbt.io.{FileFilter, PathFinder, Using}
+
+/** @author
+  *   pfnguyen
   */
 private[android] trait TaskBase {
 
   def loadProperties(path: File): Properties = {
-    import sbt._
     val p = new Properties
-    (path * "*.properties").get.foreach(Using.fileInputStream(_)(p.load))
+    (PathFinder(path) * FileFilter.globFilter("*.properties")).get
+      .foreach(Using.fileInputStream(_)(p.load))
     p
   }
 }
