@@ -8,7 +8,8 @@ object Settings extends AutoPlugin {
 
     object Dependency {
       object Compile {
-        val shapeless = "com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full
+        val shapeless =
+          "com.chuusai" % "shapeless" % "2.0.0-M1" cross CrossVersion.full
         val scalazCore = "org.scalaz" %% "scalaz-core" % "7.0.3"
       }
 

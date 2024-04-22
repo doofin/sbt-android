@@ -6,8 +6,9 @@ import sbt._
 import sbt.Keys._
 
 import scala.xml.XML
-/**
-  * @author pfnguyen
+
+/** @author
+  *   pfnguyen
   */
 trait AndroidJarSettings extends AutoPlugin {
 
@@ -28,16 +29,16 @@ trait AndroidJarSettings extends AutoPlugin {
     rGenerator := Nil,
     debugIncludesTests := false,
     libraryProject := true,
-    publishArtifact in (Compile,packageBin) := true,
-    publishArtifact in (Compile,packageSrc) := true,
-    mappings in (Compile,packageSrc) ++= {
+    publishArtifact in (Compile, packageBin) := true,
+    publishArtifact in (Compile, packageSrc) := true,
+    mappings in (Compile, packageSrc) ++= {
       val dirs = (managedSourceDirectories in Compile).value
 
       (managedSources in Compile).value map { s =>
         val name = dirs.flatMap { d =>
           (s relativeTo d).toList
         }.headOption
-        (s,name.fold(s.getName)(_.getPath))
+        (s, name.fold(s.getName)(_.getPath))
       }
     },
     lintFlags := {

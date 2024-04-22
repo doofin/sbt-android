@@ -825,6 +825,7 @@ object Tasks extends TaskBase {
     val s = streams.value
     val filter = ndkAbiFilter.value
     val logger = ilogger.value(s.log)
+
     Packaging.apkbuild(
       builder.value(s.log),
       Packaging.Jars(m, u, dcp),
@@ -841,6 +842,7 @@ object Tasks extends TaskBase {
     )
   }
 
+  // main task
   val signReleaseTaskDef = Def.task {
     val c = apkSigningConfig.value
     val a = apkbuild.value
@@ -850,17 +852,18 @@ object Tasks extends TaskBase {
     val s = streams.value
 
     implicit val output: Converter = o
+
     if (d()) {
       s.log.info("Debug package does not need signing: " + a.getName)
       a
     } else {
       c map { cfg =>
         import SignAndroidJar._
-        val signed = l.signedApk(a)
+        val signedApkFile = l.signedApk(a)
         val options = Seq(
           storeType(cfg.storeType),
           storePassword(cfg.storePass),
-          signedJar(signed),
+          signedJar(signedApkFile),
           keyStore(cfg.keystore.toURI.toURL)
         )
 
@@ -874,8 +877,8 @@ object Tasks extends TaskBase {
           ))).!
         }
 
-        s.log.info("Signed: " + signed.getName)
-        signed
+        s.log.info("Signed: " + signedApkFile.getName)
+        signedApkFile
       } getOrElse {
         s.log.warn("Package needs signing: " + a.getName)
         a

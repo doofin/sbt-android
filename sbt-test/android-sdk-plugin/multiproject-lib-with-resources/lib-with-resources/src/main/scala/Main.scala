@@ -1,2 +1,1 @@
-class X extends android.app.Activity {
-}
+class X extends android.app.Activity {}

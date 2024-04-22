@@ -49,13 +49,15 @@ dexMainClasses in Android := Seq(
   "android/support/multidex/ZipUtil.class"
 )
 
-packagingOptions in Android := PackagingOptions(excludes = Seq(
-  "META-INF/MANIFEST.MF",
-  "META-INF/LICENSE.txt",
-  "META-INF/LICENSE",
-  "META-INF/NOTICE.txt",
-  "META-INF/NOTICE"
-))
+packagingOptions in Android := PackagingOptions(excludes =
+  Seq(
+    "META-INF/MANIFEST.MF",
+    "META-INF/LICENSE.txt",
+    "META-INF/LICENSE",
+    "META-INF/NOTICE.txt",
+    "META-INF/NOTICE"
+  )
+)
 
 javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6")
 

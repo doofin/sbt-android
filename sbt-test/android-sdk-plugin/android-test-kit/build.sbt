@@ -1,6 +1,8 @@
 lazy val root = project.in(file(".")).enablePlugins(AndroidApp)
 
-lazy val flavor1 = android.flavorOf(root, "flavor1",
+lazy val flavor1 = android.flavorOf(
+  root,
+  "flavor1",
   debugIncludesTests in Android := true,
   libraryDependencies ++=
     "com.android.support.test" % "runner" % "0.2" % "androidTest" ::

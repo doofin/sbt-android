@@ -12,7 +12,8 @@ TaskKey[Unit]("check-structure") := {
   val apk = "apk" -> android \ "apk"
   val isLib = "isLib" -> android \ "isLibrary"
   val prog = "proguard" -> android \ "proguard"
-  val checks = List(andy, vers, manif, reso, assets, generated, natives, apk, isLib, prog)
+  val checks =
+    List(andy, vers, manif, reso, assets, generated, natives, apk, isLib, prog)
   val empty = checks.collect { case x if x._2.isEmpty => x._1 }
   if (empty.nonEmpty)
     sys.error(s"Missing '${empty.mkString(",")}' nodes in structure")

@@ -3,7 +3,7 @@ import Tests._
 
 TaskKey[Unit]("check-for-nothing") := {
   val a = (apkFile in Android).value
-  val found = findInArchive(a) (_ == "nothing.txt")
+  val found = findInArchive(a)(_ == "nothing.txt")
   if (!found) sys.error("nothing.txt not found in APK")
 }
 

@@ -11,9 +11,8 @@ javacOptions in Compile ++= Seq("-source", "1.6", "-target", "1.6")
 
 showSdkProgress in Android := false
 
-lazy val androidScala = Project(
-  "tims-scala-android",
-  file(".")).settings(commonSettings ++ Seq(
+lazy val androidScala = Project("tims-scala-android", file(".")).settings(
+  commonSettings ++ Seq(
     libraryDependencies ++= Seq()
   )
 )
@@ -26,17 +25,18 @@ scalariformPreferences := scalariformPreferences.value
   .setPreference(CompactControlReadability, false)
 
 def commonSettings = Seq(
-    organization := "com.optrak",
-    scalaVersion := Version.scala,
-    scalacOptions ++= Seq(
-      "-unchecked",
-      "-deprecation",
-      "-Xlint",
-      "-language:_",
-      "-encoding", "UTF-8"
-    ),
-    libraryDependencies ++= Seq(
-      Dependency.Compile.shapeless,
-      Dependency.Compile.scalazCore
-    )
+  organization := "com.optrak",
+  scalaVersion := Version.scala,
+  scalacOptions ++= Seq(
+    "-unchecked",
+    "-deprecation",
+    "-Xlint",
+    "-language:_",
+    "-encoding",
+    "UTF-8"
+  ),
+  libraryDependencies ++= Seq(
+    Dependency.Compile.shapeless,
+    Dependency.Compile.scalazCore
   )
+)

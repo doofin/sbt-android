@@ -69,7 +69,9 @@ trait BuildOutput extends Any {
 object BuildOutput {
   type Converter = ProjectLayout => BuildOutput
 
-  class AndroidOutput(val layout: ProjectLayout) extends AnyVal with BuildOutput {
+  class AndroidOutput(val layout: ProjectLayout)
+      extends AnyVal
+      with BuildOutput {
     def temp = intermediates / "temp"
     def mergeTemp = temp / "merge"
     def aaptTemp = temp / "aapt"
@@ -119,8 +121,9 @@ object BuildOutput {
 
     def unsignedApk(debug: Boolean, name: String) = {
       output.mkdirs()
-      val rel = if (debug) "-debug-unaligned.apk"
-      else "-release-unsigned.apk"
+      val rel =
+        if (debug) "-debug-unaligned.apk"
+        else "-release-unsigned.apk"
       val pkg = name + rel
       output / pkg
     }
@@ -195,7 +198,8 @@ object BuildOutput {
 
     def libraryLintConfig = base.libraryLintConfig
 
-    def unsignedApk(debug: Boolean, name: String) = base.unsignedApk(debug,name)
+    def unsignedApk(debug: Boolean, name: String) =
+      base.unsignedApk(debug, name)
     def signedApk(apk: File) = base.signedApk(apk)
 
     def alignedApk(apk: File) = base.alignedApk(apk)
@@ -205,7 +209,9 @@ object BuildOutput {
     def outputApklibFile(name: String) = base.outputApklibFile(name)
     def integrationApkFile(name: String) = base.integrationApkFile(name)
   }
-  implicit class LayoutOutputExtension(val layout: ProjectLayout)(implicit val base: BuildOutput.Converter) extends BuildOutput {
+  implicit class LayoutOutputExtension(val layout: ProjectLayout)(implicit
+      val base: BuildOutput.Converter
+  ) extends BuildOutput {
     def intermediates = base(layout).intermediates
     def mergeTemp = base(layout).mergeTemp
     def aaptTemp = base(layout).aaptTemp
@@ -252,7 +258,8 @@ object BuildOutput {
 
     def libraryLintConfig = base(layout).libraryLintConfig
 
-    def unsignedApk(debug: Boolean, name: String) = base(layout).unsignedApk(debug,name)
+    def unsignedApk(debug: Boolean, name: String) =
+      base(layout).unsignedApk(debug, name)
     def signedApk(apk: File) = base(layout).signedApk(apk)
 
     def alignedApk(apk: File) = base(layout).alignedApk(apk)
@@ -270,10 +277,12 @@ object BuildOutput {
 
 object SdkLayout {
   import com.android.SdkConstants._
-  def googleRepository(sdkPath: String) = "google libraries" at (
-    file(sdkPath) / "extras" / "google" / "m2repository").toURI.toString
-  def androidRepository(sdkPath: String) = "android libraries" at (
-    file(sdkPath) / "extras" / "android" / "m2repository").toURI.toString
+  def googleRepository(sdkPath: String) = "google libraries" at (file(
+    sdkPath
+  ) / "extras" / "google" / "m2repository").toURI.toString
+  def androidRepository(sdkPath: String) = "android libraries" at (file(
+    sdkPath
+  ) / "extras" / "android" / "m2repository").toURI.toString
   def renderscriptSupportLibFile(t: BuildToolInfo) =
     t.getLocation / "renderscript" / "lib"
   def renderscriptSupportLibs(t: BuildToolInfo) =
@@ -286,7 +295,7 @@ object SdkLayout {
   def zipalign(sdkPath: String) = tools(sdkPath) / FN_ZIPALIGN
   def adb(sdkPath: String) = platformTools(sdkPath) / FN_ADB
   def androidProguardConfig(sdkPath: String) = tools(sdkPath) /
-     FD_PROGUARD / FN_ANDROID_PROGUARD_FILE
+    FD_PROGUARD / FN_ANDROID_PROGUARD_FILE
 
   def sbtSubfolder = file(AndroidLocation.getFolder) / "sbt"
   def repocfg = file(AndroidLocation.getFolder) / "repositories.cfg"
@@ -303,6 +312,7 @@ object SdkLayout {
     }
   } else None
 }
+
 trait ProjectLayout {
   def base: File
   def scalaSource: File
@@ -327,11 +337,14 @@ trait ProjectLayout {
   def renderscript: File
   def proguard: File = base / "proguard-project.txt"
 }
+
 object ProjectLayout {
   def apply(base: File, target: Option[File] = None) = {
     if ((base / "AndroidManifest.xml").isFile) {
       if ((base / "src" / "main" / "AndroidManifest.xml").isFile) {
-        PluginFail(s"Both $base/AndroidManifest.xml and $base/src/main/AndroidManifest.xml exist, unable to determine project layout")
+        PluginFail(
+          s"Both $base/AndroidManifest.xml and $base/src/main/AndroidManifest.xml exist, unable to determine project layout"
+        )
       }
       ProjectLayout.Ant(base)
     } else {

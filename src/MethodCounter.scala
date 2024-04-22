@@ -19,9 +19,20 @@ object MethodCounter extends (File => Int) {
 
     var classesMap: Map[Class[_], AnyRef] = Map.empty
     var currentClass = ""
-    val classes = List(classOf[ClassVisitor], classOf[MethodVisitor], classOf[FieldVisitor], classOf[AnnotationVisitor], classOf[SignatureVisitor])
+    val classes = List(
+      classOf[ClassVisitor],
+      classOf[MethodVisitor],
+      classOf[FieldVisitor],
+      classOf[AnnotationVisitor],
+      classOf[SignatureVisitor]
+    )
     val handler = new MethodHandler {
-      override def invoke(self: AnyRef, thisMethod: Method, proceed: Method, args: Array[AnyRef]) = {
+      override def invoke(
+          self: AnyRef,
+          thisMethod: Method,
+          proceed: Method,
+          args: Array[AnyRef]
+      ) = {
         thisMethod.getName match {
           case "visit" =>
             if (args.length > 2)
@@ -53,7 +64,11 @@ object MethodCounter extends (File => Int) {
       factory.setFilter(new MethodFilter {
         override def isHandled(p1: Method): Boolean = true
       })
-      val o = factory.create(Array(classOf[Int]), Array(Opcodes.ASM5.asInstanceOf[AnyRef]), handler)
+      val o = factory.create(
+        Array(classOf[Int]),
+        Array(Opcodes.ASM5.asInstanceOf[AnyRef]),
+        handler
+      )
       (clazz, o)
     }.toMap
     classesMap(classOf[ClassVisitor]) match {
@@ -61,17 +76,19 @@ object MethodCounter extends (File => Int) {
         val readbuf = Array.ofDim[Byte](16384)
         val buf = new ByteArrayOutputStream
 
-        Using.fileInputStream(jar) (Using.jarInputStream(_) { jin =>
-          Iterator.continually(jin.getNextJarEntry) takeWhile (_ != null) foreach {
-            entry =>
-              if (entry.getName.endsWith(".class")) {
-                buf.reset()
-                Iterator.continually(jin.read(readbuf)) takeWhile (
-                  _ != -1) foreach (buf.write(readbuf, 0, _))
-                val r = new ClassReader(buf.toByteArray)
-                r.accept(x, 0)
-              }
-              jin.closeEntry()
+        Using.fileInputStream(jar)(Using.jarInputStream(_) { jin =>
+          Iterator.continually(
+            jin.getNextJarEntry
+          ) takeWhile (_ != null) foreach { entry =>
+            if (entry.getName.endsWith(".class")) {
+              buf.reset()
+              Iterator.continually(
+                jin.read(readbuf)
+              ) takeWhile (_ != -1) foreach (buf.write(readbuf, 0, _))
+              val r = new ClassReader(buf.toByteArray)
+              r.accept(x, 0)
+            }
+            jin.closeEntry()
           }
 
         })
@@ -80,4 +97,3 @@ object MethodCounter extends (File => Int) {
     count
   }
 }
-

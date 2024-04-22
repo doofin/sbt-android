@@ -10,7 +10,10 @@ import scala.collection.JavaConverters._
 import com.android.SdkConstants
 import com.android.apkzlib.zfile.{ApkCreatorFactory, ApkZFileCreatorFactory}
 import com.android.apkzlib.zip.ZFileOptions
-import com.android.apkzlib.zip.compress.{BestAndDefaultDeflateExecutorCompressor, DeflateExecutionCompressor}
+import com.android.apkzlib.zip.compress.{
+  BestAndDefaultDeflateExecutorCompressor,
+  DeflateExecutionCompressor
+}
 import com.android.builder.core.AndroidBuilder
 import com.android.builder.files.{IncrementalRelativeFileSets, RelativeFile}
 import com.android.builder.internal.packaging.IncrementalPackager
@@ -29,43 +32,55 @@ import sbt.util.CacheStoreFactory
 
 import android.Keys.PackagingOptions
 
-
-/**
- * @author pfnguyen
- */
+/** @author
+  *   pfnguyen
+  */
 object Packaging {
-  case class Jars( managed: Classpath
-                 , unmanaged: Classpath
-                 , depenendices: Classpath) {
+  case class Jars(
+      managed: Classpath,
+      unmanaged: Classpath,
+      depenendices: Classpath
+  ) {
 
-    def isScalaLang(module: ModuleID): Boolean = module.organization == "org.scala-lang"
-    val providedConfigurations = Set("provided", "compile-internal", "plugin->default(compile)")
-    def isProvidedDependency(module: ModuleID): Boolean = module.configurations exists providedConfigurations
+    def isScalaLang(module: ModuleID): Boolean =
+      module.organization == "org.scala-lang"
+    val providedConfigurations =
+      Set("provided", "compile-internal", "plugin->default(compile)")
+    def isProvidedDependency(module: ModuleID): Boolean =
+      module.configurations exists providedConfigurations
 
     // filtering out org.scala-lang should not cause an issue
     // they should not be changing on us anyway
-    lazy val list: List[File] = (managed ++ unmanaged ++ depenendices).filter {
-      a => (a.get(moduleID.key) forall { moduleId =>
-        !isScalaLang(moduleId) && !isProvidedDependency(moduleId)
-      }) && a.data.exists
-    }.groupBy(_.data.getName).collect {
-      case ("classes.jar", xs) => xs.distinct
-      case (_,xs) if xs.head.data.isFile => xs.head :: Nil
-    }.flatten.map (_.data).toList
+    lazy val list: List[File] = (managed ++ unmanaged ++ depenendices)
+      .filter { a =>
+        (a.get(moduleID.key) forall { moduleId =>
+          !isScalaLang(moduleId) && !isProvidedDependency(moduleId)
+        }) && a.data.exists
+      }
+      .groupBy(_.data.getName)
+      .collect {
+        case ("classes.jar", xs)            => xs.distinct
+        case (_, xs) if xs.head.data.isFile => xs.head :: Nil
+      }
+      .flatten
+      .map(_.data)
+      .toList
   }
 
-  def apkbuild( bldr: AndroidBuilder
-              , dependencyJars: Jars
-              , isLib: Boolean
-              , aggregateOptions: Aggregate.Apkbuild
-              , abiFilter: Set[String]
-              , collectJniOut: File
-              , resFolder: File
-              , collectResourceFolder: File
-              , collectAssetsFolder: File
-              , output: File
-              , logger: ILogger
-              , s: sbt.Keys.TaskStreams): File = {
+  def apkbuild(
+      bldr: AndroidBuilder,
+      dependencyJars: Jars,
+      isLib: Boolean,
+      aggregateOptions: Aggregate.Apkbuild,
+      abiFilter: Set[String],
+      collectJniOut: File,
+      resFolder: File,
+      collectResourceFolder: File,
+      collectAssetsFolder: File,
+      output: File,
+      logger: ILogger,
+      s: sbt.Keys.TaskStreams
+  ): File = {
 
     val options = aggregateOptions.packagingOptions
     val shrinker = aggregateOptions.resourceShrinker
@@ -77,7 +92,9 @@ object Packaging {
     val minSdk = aggregateOptions.minSdkVersion
     import language.postfixOps
     if (isLib)
-      PluginFail("This project cannot build APK, it has set 'libraryProject := true'")
+      PluginFail(
+        "This project cannot build APK, it has set 'libraryProject := true'"
+      )
     val predexed = predex flatMap (_._2 * "*.dex" get) map (_.getParentFile)
 
     val jars = dependencyJars.list
@@ -96,123 +113,198 @@ object Packaging {
         !s.endsWith(SdkConstants.DOT_NATIVE_LIBS) &&
         !nonSignaturePattern.matcher(s).matches
 
-    FileFunction.cached(s.cacheDirectory / "apkbuild-collect-resources", FilesInfo.lastModified) { _ =>
-      collectNonAndroidResources(resFolder :: jars, collectResourceFolder, options, s.log,
-        ResourceCollector(isResourceFile, isResourceFile, identity, identity))
+    FileFunction.cached(
+      s.cacheDirectory / "apkbuild-collect-resources",
+      FilesInfo.lastModified
+    ) { _ =>
+      collectNonAndroidResources(
+        resFolder :: jars,
+        collectResourceFolder,
+        options,
+        s.log,
+        ResourceCollector(isResourceFile, isResourceFile, identity, identity)
+      )
       (collectResourceFolder ** FileOnlyFilter).get.toSet
     }(((resFolder ** FileOnlyFilter).get ++ jars).toSet)
-    FileFunction.cached(s.cacheDirectory / "apkbuild-collect-jni", FilesInfo.lastModified) { _ =>
-      collectNonAndroidResources(jniFolders ++ jars, collectJniOut, options, s.log, ResourceCollector(
-        s => {
-          val m = jarAbiPattern.pattern.matcher(s)
-          m.matches && {
-            val filename = s.substring(5 + m.group(1).length)
-            filenamePattern.pattern.matcher(filename).matches ||
+    FileFunction.cached(
+      s.cacheDirectory / "apkbuild-collect-jni",
+      FilesInfo.lastModified
+    ) { _ =>
+      collectNonAndroidResources(
+        jniFolders ++ jars,
+        collectJniOut,
+        options,
+        s.log,
+        ResourceCollector(
+          s => {
+            val m = jarAbiPattern.pattern.matcher(s)
+            m.matches && {
+              val filename = s.substring(5 + m.group(1).length)
+              filenamePattern.pattern.matcher(filename).matches ||
               filename == SdkConstants.FN_GDBSERVER ||
               filename == SdkConstants.FN_GDB_SETUP
-          }
-        }, s => {
-          val m = folderAbiPattern.pattern.matcher(s)
-          m.matches && {
-            val filename = s.substring(1 + m.group(1).length)
-            filenamePattern.pattern.matcher(filename).matches ||
+            }
+          },
+          s => {
+            val m = folderAbiPattern.pattern.matcher(s)
+            m.matches && {
+              val filename = s.substring(1 + m.group(1).length)
+              filenamePattern.pattern.matcher(filename).matches ||
               filename == SdkConstants.FN_GDBSERVER ||
               filename == SdkConstants.FN_GDB_SETUP
-          }
-        },
-        s => SdkConstants.FD_APK_NATIVE_LIBS + "/" + s,
-        s => s.substring(SdkConstants.FD_APK_NATIVE_LIBS.length + 1)
-      ))
+            }
+          },
+          s => SdkConstants.FD_APK_NATIVE_LIBS + "/" + s,
+          s => s.substring(SdkConstants.FD_APK_NATIVE_LIBS.length + 1)
+        )
+      )
       (collectJniOut ** FileOnlyFilter).get.toSet
     }((jniFolders.flatMap(_ ** FileOnlyFilter get) ++ jars).toSet)
-    packageApk(output, bldr, minSdk, aggregateOptions.manifest,
-      shrinker, debugSigningConfig, collectAssetsFolder, (dexFolder +: predexed).toList,
-      collectJniOut, collectResourceFolder, abiFilter, debug, s)
+    packageApk(
+      output,
+      bldr,
+      minSdk,
+      aggregateOptions.manifest,
+      shrinker,
+      debugSigningConfig,
+      collectAssetsFolder,
+      (dexFolder +: predexed).toList,
+      collectJniOut,
+      collectResourceFolder,
+      abiFilter,
+      debug,
+      s
+    )
     s.log.debug("Including predexed: " + predexed)
-    s.log.info("Packaged: %s (%s)" format (
-      output.getName, sizeString(output.length)))
+    s.log.info(
+      "Packaging.scala: Packaged: %s (%s)" format (output.getName, sizeString(
+        output.length
+      ))
+    )
     output
   }
 
-  def deltas(cacheName: String, files: List[File], base: File => File, s: sbt.Keys.TaskStreams): ImmutableMap[RelativeFile,FileStatus] = {
-    var result = Option.empty[ImmutableMap[RelativeFile,FileStatus]]
+  def deltas(
+      cacheName: String,
+      files: List[File],
+      base: File => File,
+      s: sbt.Keys.TaskStreams
+  ): ImmutableMap[RelativeFile, FileStatus] = {
+    var result = Option.empty[ImmutableMap[RelativeFile, FileStatus]]
     s.log.debug("Checking for changes in " + files.mkString(","))
 
     FileFunction.cached(
       CacheStoreFactory(s.cacheDirectory / cacheName),
       FilesInfo.lastModified,
-      FilesInfo.exists) { (ins, _) =>
-        s.log.debug("Found changes!")
-        val ds =
-          if (ins.added == ins.checked)
-            ins.added.toList.map(f => new RelativeFile(base(f), f) -> FileStatus.NEW)
-          else {
-            ins.added.toList.map(f => new RelativeFile(base(f), f) -> FileStatus.NEW) ++
-              ins.removed.toList.map(f => new RelativeFile(base(f), f) -> FileStatus.REMOVED) ++
-              (ins.modified -- ins.added).toList.map(f => new RelativeFile(base(f), f) -> FileStatus.CHANGED)
-          }
+      FilesInfo.exists
+    ) { (ins, _) =>
+      s.log.debug("Found changes!")
+      val ds =
+        if (ins.added == ins.checked)
+          ins.added.toList.map(f =>
+            new RelativeFile(base(f), f) -> FileStatus.NEW
+          )
+        else {
+          ins.added.toList.map(f =>
+            new RelativeFile(base(f), f) -> FileStatus.NEW
+          ) ++
+            ins.removed.toList.map(f =>
+              new RelativeFile(base(f), f) -> FileStatus.REMOVED
+            ) ++
+            (ins.modified -- ins.added).toList.map(f =>
+              new RelativeFile(base(f), f) -> FileStatus.CHANGED
+            )
+        }
 
-        result = Some(ImmutableMap.copyOf(ds.toMap.asJava))
+      result = Some(ImmutableMap.copyOf(ds.toMap.asJava))
 
-        ins.checked
+      ins.checked
     }(files.toSet)
 
     result.getOrElse(ImmutableMap.of())
   }
 
-  def packageApk(apk: File,
-                 bldr: AndroidBuilder,
-                 minSdkVersion: Int,
-                 manifest: File,
-                 resapk: File,
-                 signingConfig: ApkSigningConfig,
-                 assetFolder: File,
-                 dexFolders: List[File],
-                 jniFolder: File,
-                 javaResFolder: File,
-                 abiFilter: Set[String],
-                 debug: Boolean,
-                 s: sbt.Keys.TaskStreams): Unit = {
-    val certInfo = KeystoreHelper.getCertificateInfo(signingConfig.storeType,
+  def packageApk(
+      apk: File,
+      bldr: AndroidBuilder,
+      minSdkVersion: Int,
+      manifest: File,
+      resapk: File,
+      signingConfig: ApkSigningConfig,
+      assetFolder: File,
+      dexFolders: List[File],
+      jniFolder: File,
+      javaResFolder: File,
+      abiFilter: Set[String],
+      debug: Boolean,
+      s: sbt.Keys.TaskStreams
+  ): Unit = {
+    val certInfo = KeystoreHelper.getCertificateInfo(
+      signingConfig.storeType,
       signingConfig.keystore,
       signingConfig.storePass,
       signingConfig.keyPass.getOrElse(signingConfig.storePass),
-      signingConfig.alias)
+      signingConfig.alias
+    )
     val creationData =
       new ApkCreatorFactory.CreationData(
         apk,
         certInfo.getKey, // key,
-        certInfo.getCertificate, //certificate,
+        certInfo.getCertificate, // certificate,
         signingConfig.v1, // v1SigningEnabled,
         signingConfig.v2, // v2SigningEnabled,
         null, // BuiltBy
         bldr.getCreatedBy,
         minSdkVersion,
         PackagingUtils.getNativeLibrariesLibrariesPackagingMode(manifest),
-        PackagingUtils.getNoCompressPredicate(new AaptOptions {
-          override def getNoCompress = null
-          override def getFailOnMissingConfigEntry = true
-          override def getAdditionalParameters = null
-          override def getIgnoreAssets = null
-        }, manifest))
+        PackagingUtils.getNoCompressPredicate(
+          new AaptOptions {
+            override def getNoCompress = null
+            override def getFailOnMissingConfigEntry = true
+            override def getAdditionalParameters = null
+            override def getIgnoreAssets = null
+          },
+          manifest
+        )
+      )
     val incrementalApk = apk.getParentFile / "incremental"
     incrementalApk.mkdirs()
     val dexes = dexFolders.flatMap(d => (d ** "*.dex").get)
     val packager = new IncrementalPackager(
       creationData,
-      incrementalApk, //getIncrementalFolder(),
+      incrementalApk, // getIncrementalFolder(),
       zfileCreatorFactory(debug),
       abiFilter.asJava,
-      debug)
+      debug
+    )
     packager.updateDex(
-      deltas("incremental-apk-dex", dexes, f => f.getParentFile, s))
-    packager.updateJavaResources(deltas("incremental-apk-javares",
-      (javaResFolder ** FileOnlyFilter).get.toList, _ => javaResFolder, s))
-    packager.updateAssets(deltas("incremental-apk-assets",
-      (assetFolder ** FileOnlyFilter).get.toList, _ => assetFolder, s))
+      deltas("incremental-apk-dex", dexes, f => f.getParentFile, s)
+    )
+    packager.updateJavaResources(
+      deltas(
+        "incremental-apk-javares",
+        (javaResFolder ** FileOnlyFilter).get.toList,
+        _ => javaResFolder,
+        s
+      )
+    )
+    packager.updateAssets(
+      deltas(
+        "incremental-apk-assets",
+        (assetFolder ** FileOnlyFilter).get.toList,
+        _ => assetFolder,
+        s
+      )
+    )
     packager.updateAndroidResources(IncrementalRelativeFileSets.fromZip(resapk))
-    packager.updateNativeLibraries(deltas("incremental-apk-jni",
-      (jniFolder ** FileOnlyFilter).get.toList, _ => jniFolder, s))
+    packager.updateNativeLibraries(
+      deltas(
+        "incremental-apk-jni",
+        (jniFolder ** FileOnlyFilter).get.toList,
+        _ => jniFolder,
+        s
+      )
+    )
 //    packager.updateAtomMetadata(changedAtomMetadata)
     packager.close()
   }
@@ -232,23 +324,28 @@ object Packaging {
     val compressionExecutor =
       new ThreadPoolExecutor(
         0, /* Number of always alive threads */
-        2, //MAXIMUM_COMPRESSION_THREADS,
-        100, //BACKGROUND_THREAD_DISCARD_TIME_MS,
+        2, // MAXIMUM_COMPRESSION_THREADS,
+        100, // BACKGROUND_THREAD_DISCARD_TIME_MS,
         TimeUnit.MILLISECONDS,
-        new LinkedBlockingDeque)
+        new LinkedBlockingDeque
+      )
 
     if (debug) {
       options.setCompressor(
         new DeflateExecutionCompressor(
           compressionExecutor,
           options.getTracker,
-          Deflater.BEST_SPEED))
+          Deflater.BEST_SPEED
+        )
+      )
     } else {
       options.setCompressor(
         new BestAndDefaultDeflateExecutorCompressor(
           compressionExecutor,
           options.getTracker,
-          1.0))
+          1.0
+        )
+      )
       options.setAutoSortFiles(true)
     }
 
@@ -258,41 +355,54 @@ object Packaging {
     val KB = 1024 * 1.0
     val MB = KB * KB
     len match {
-      case s if s < MB  => "%.2fKB" format (s/KB)
-      case s if s >= MB => "%.2fMB" format (s/MB)
+      case s if s < MB  => "%.2fKB" format (s / KB)
+      case s if s >= MB => "%.2fMB" format (s / MB)
     }
   }
   import collection.mutable
-  def newMultiMap[K,V]: mutable.MultiMap[K,V] =
-    new mutable.HashMap[K,mutable.Set[V]] with mutable.MultiMap[K,V] {
+  def newMultiMap[K, V]: mutable.MultiMap[K, V] =
+    new mutable.HashMap[K, mutable.Set[V]] with mutable.MultiMap[K, V] {
       override protected def makeSet = new mutable.LinkedHashSet[V]
     }
   def copyStream(in: InputStream, out: OutputStream, buf: Array[Byte]): Unit = {
-    Iterator.continually(in.read(buf, 0, buf.length)).takeWhile(_ != -1).foreach { r =>
-      out.write(buf, 0, r)
-    }
+    Iterator
+      .continually(in.read(buf, 0, buf.length))
+      .takeWhile(_ != -1)
+      .foreach { r =>
+        out.write(buf, 0, r)
+      }
   }
-  case class ResourceCollector(validateJarPath:    String => Boolean,
-                               validateFolderPath: String => Boolean,
-                               folderPathToKey:    String => String,
-                               keyToFolderPath:    String => String)
-  /** ported from com.android.build.gradle.internal.transforms.MergeJavaResourcesTransform */
+  case class ResourceCollector(
+      validateJarPath: String => Boolean,
+      validateFolderPath: String => Boolean,
+      folderPathToKey: String => String,
+      keyToFolderPath: String => String
+  )
+
+  /** ported from
+    * com.android.build.gradle.internal.transforms.MergeJavaResourcesTransform
+    */
   // TODO implement incremental collection
-  def collectNonAndroidResources(sources: Seq[File],
-                                 dest: File,
-                                 options: PackagingOptions,
-                                 log: Logger,
-                                 validator: ResourceCollector): Unit = {
+  def collectNonAndroidResources(
+      sources: Seq[File],
+      dest: File,
+      options: PackagingOptions,
+      log: Logger,
+      validator: ResourceCollector
+  ): Unit = {
     val excludes = options.excludes.toSet
     val firsts = options.pickFirsts.toSet
     val merges = options.merges.toSet
     IO.delete(dest)
-    val srcdata = newMultiMap[String,File]
+    val srcdata = newMultiMap[String, File]
     dest.mkdirs()
 
-    def skipEntry(entry: ZipEntry): Boolean =  {
+    def skipEntry(entry: ZipEntry): Boolean = {
       val path = entry.getName
-      if (entry.isDirectory || JarFile.MANIFEST_NAME == path || !validator.validateJarPath(path)) {
+      if (
+        entry.isDirectory || JarFile.MANIFEST_NAME == path || !validator
+          .validateJarPath(path)
+      ) {
         true
       } else {
         // split the path into segments.
@@ -307,7 +417,10 @@ object Packaging {
           // jar file, but we need to exclude some other folder (like /META-INF) so
           // we check anyway.
           segments.last.startsWith(".") || segments.last.startsWith("_") ||
-            !PackagingUtils.checkFileForApkPackaging(segments.last, false /*allowClassFiles*/)
+          !PackagingUtils.checkFileForApkPackaging(
+            segments.last,
+            false /*allowClassFiles*/
+          )
         }
       }
     }
@@ -320,14 +433,17 @@ object Packaging {
       }
     }
     dirs foreach { d =>
-      (d ** FileOnlyFilter).get flatMap (_ relativeTo d) map (_.getPath.replace('\\', '/')) filter
+      (d ** FileOnlyFilter).get flatMap (_ relativeTo d) map (_.getPath.replace(
+        '\\',
+        '/'
+      )) filter
         validator.validateFolderPath foreach { f =>
-        srcdata.addBinding(validator.folderPathToKey(f), d)
-      }
+          srcdata.addBinding(validator.folderPathToKey(f), d)
+        }
     }
 
-    val merged = newMultiMap[String,File]
-    val fromjars = newMultiMap[File,String]
+    val merged = newMultiMap[String, File]
+    val fromjars = newMultiMap[File, String]
     srcdata.keys.filterNot(excludes).foreach { k =>
       val srcs = srcdata(k)
       val src = if (srcs.size == 1) {
@@ -352,7 +468,11 @@ object Packaging {
         } else {
           val d = dest / k
           d.getParentFile.mkdirs()
-          IO.copyFile(s / validator.keyToFolderPath(k), d, preserveLastModified = true)
+          IO.copyFile(
+            s / validator.keyToFolderPath(k),
+            d,
+            preserveLastModified = true
+          )
         }
       }
     }
@@ -397,4 +517,3 @@ object Packaging {
     }
   }
 }
-
