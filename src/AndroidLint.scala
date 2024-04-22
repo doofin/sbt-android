@@ -11,22 +11,41 @@ import sbt._
 import com.android.tools.lint._
 import com.android.tools.lint.checks.ApiDetector
 import com.android.tools.lint.client.api.{IssueRegistry, LintClient}
-import com.android.tools.lint.detector.api.{Project => LintProject, Location, TextFormat, Severity, Issue}
+import com.android.tools.lint.detector.api.{
+  Project => LintProject,
+  Location,
+  TextFormat,
+  Severity,
+  Issue
+}
 
 import collection.JavaConverters._
 import language.postfixOps
 
-/**
- * @author pfnguyen
- */
+/** @author
+  *   pfnguyen
+  */
 object AndroidLint {
 
-  def apply(layout: ProjectLayout, classes: File, flags: LintCliFlags, detectors: Seq[Issue], strict: Boolean,
-            minSdk: String, targetSdk: String, s: TaskStreams)(implicit m: BuildOutput.Converter): Unit = {
-    val client = AndroidLint.SbtLintClient(layout, classes, flags, minSdk, targetSdk)
+  def apply(
+      layout: ProjectLayout,
+      classes: File,
+      flags: LintCliFlags,
+      detectors: Seq[Issue],
+      strict: Boolean,
+      minSdk: String,
+      targetSdk: String,
+      s: TaskStreams
+  ) // (implicit m: BuildOutput.Converter)
+      : Unit = {
+    val client =
+      AndroidLint.SbtLintClient(layout, classes, flags, minSdk, targetSdk)
     flags.getReporters.clear()
     flags.getReporters.add(SbtLintReporter(client, strict, s))
-    client.run(AndroidLint.LintDetectorIssues(detectors), List(layout.base).asJava)
+    client.run(
+      AndroidLint.LintDetectorIssues(detectors),
+      List(layout.base).asJava
+    )
   }
   val lintDetectorList = List(
     ApiDetector.OVERRIDE,
@@ -38,7 +57,14 @@ object AndroidLint {
     override def getIssues = issues.asJava
   }
 
-  case class SbtLintClient(layout: ProjectLayout, classes: File, _flags: LintCliFlags, minSdk: String, targetSdk: String)(implicit m: BuildOutput.Converter) extends LintCliClient(_flags, "sbt-android") {
+  case class SbtLintClient(
+      layout: ProjectLayout,
+      classes: File,
+      _flags: LintCliFlags,
+      minSdk: String,
+      targetSdk: String
+  ) // (implicit m: BuildOutput.Converter)
+      extends LintCliClient(_flags, "sbt-android") {
     override def addProgressPrinter() = {
 //      super.addProgressPrinter()
     }
@@ -56,23 +82,38 @@ object AndroidLint {
     }
 
   }
-  case class SbtProject(_client: LintClient, layout: ProjectLayout, classes: File, minSdk: String, targetSdk: String)(implicit m: BuildOutput.Converter)
-    extends LintProject(_client, layout.base, layout.base) {
+  case class SbtProject(
+      _client: LintClient,
+      layout: ProjectLayout,
+      classes: File,
+      minSdk: String,
+      targetSdk: String
+  ) // (implicit m: BuildOutput.Converter)
+      extends LintProject(_client, layout.base, layout.base) {
     override def getJavaClassFolders = List(classes).asJava
-    override def getManifestFiles    = List(layout.manifest).asJava
-    override def getResourceFolders  = List(layout.res).asJava
-    override def getMinSdkVersion    = SdkVersionInfo.getVersion(minSdk, client.getTargets)
-    override def getTargetSdkVersion = SdkVersionInfo.getVersion(targetSdk, client.getTargets)
+    override def getManifestFiles = List(layout.manifest).asJava
+    override def getResourceFolders = List(layout.res).asJava
+    override def getMinSdkVersion =
+      SdkVersionInfo.getVersion(minSdk, client.getTargets)
+    override def getTargetSdkVersion =
+      SdkVersionInfo.getVersion(targetSdk, client.getTargets)
   }
 
-  case class SbtLintReporter(_client: LintCliClient,
-                             strict: Boolean,
-                             s: TaskStreams) extends Reporter(_client, null) {
+  case class SbtLintReporter(
+      _client: LintCliClient,
+      strict: Boolean,
+      s: TaskStreams
+  ) extends Reporter(_client, null) {
     lazy val fmt = new MessageFormat("{0} {1}{0,choice,0#s|1#|1<s}")
-    def fmtE(n: Int): StringBuffer = fmt.format(Array(n, "error"),   new StringBuffer, null)
-    def fmtW(n: Int): StringBuffer = fmt.format(Array(n, "warning"), new StringBuffer, null)
+    def fmtE(n: Int): StringBuffer =
+      fmt.format(Array(n, "error"), new StringBuffer, null)
+    def fmtW(n: Int): StringBuffer =
+      fmt.format(Array(n, "warning"), new StringBuffer, null)
 
-    override def write(stats: Reporter.Stats, issues: util.List[Warning]): Unit = {
+    override def write(
+        stats: Reporter.Stats,
+        issues: util.List[Warning]
+    ): Unit = {
       val errorCount = stats.errorCount
       val warningCount = stats.warningCount
 
@@ -106,7 +147,9 @@ object AndroidLint {
             }
           }
           b.append(TextFormat.RAW.convertTo(issue.message, TextFormat.TEXT))
-          Option(issue.errorLine) filter (_.nonEmpty) foreach b.append("\n").append
+          Option(issue.errorLine) filter (_.nonEmpty) foreach b
+            .append("\n")
+            .append
           log(b.mkString)
 
           for {
@@ -145,9 +188,16 @@ object AndroidLint {
 
     def getDisplayPath(prj: LintProject, file: File): String = {
       var path = file.getPath
-      if (!client.getFlags.isFullPath && path.startsWith(prj.getReferenceDir.getPath)) {
+      if (
+        !client.getFlags.isFullPath && path.startsWith(
+          prj.getReferenceDir.getPath
+        )
+      ) {
         var chop = prj.getReferenceDir.getPath.length
-        if (path.length() > chop && path.charAt(chop) == java.io.File.separatorChar) {
+        if (
+          path
+            .length() > chop && path.charAt(chop) == java.io.File.separatorChar
+        ) {
           chop += 1
         }
         path = path.substring(chop)
@@ -161,7 +211,11 @@ object AndroidLint {
       path
     }
 
-    private def alsoAffects(issue: Warning, loc: Option[Location], b: StringBuilder = new StringBuilder): StringBuilder = {
+    private def alsoAffects(
+        issue: Warning,
+        loc: Option[Location],
+        b: StringBuilder = new StringBuilder
+    ): StringBuilder = {
 
       (for {
         location <- loc

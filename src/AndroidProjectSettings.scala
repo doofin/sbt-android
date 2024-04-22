@@ -68,7 +68,7 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
 
         checkVersion("minSdkVersion", minSdk)
         checkVersion("targetSdkVersion", tgtSdk)
-        implicit val output: Converter = o
+        // implicit val output: Converter = o
         if (en)
           AndroidLint(layout, classes, f, ld, strict, minSdk, tgtSdk, s)
         c
