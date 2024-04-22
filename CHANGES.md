@@ -1,3 +1,7 @@
+## New features in 2.0.1  ##
+
+* upgrade to sbt 1.3.13
+
 ## New features in 1.7.x ##
 
 * `1.7.9`:
