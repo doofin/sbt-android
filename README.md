@@ -6,6 +6,9 @@ run : sbt publishLocal
 
 version: 2.0.1-SNAPSHOT
 
+## scala 2.12/3 support: 
+https://github.com/scala-android/sbt-android/issues/345
+
 ## example  
 in build.sbt : 
 
