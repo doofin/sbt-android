@@ -2,14 +2,12 @@ package android
 
 import javassist.util.proxy.{MethodHandler, MethodFilter, ProxyFactory}
 
-import sbt._
-import sbt.io.Using
-
 import org.objectweb.asm._
 import org.objectweb.asm.signature.SignatureVisitor
 
-import java.io.ByteArrayOutputStream
+import java.io.{ByteArrayOutputStream, File, FileInputStream}
 import java.lang.reflect.Method
+import java.util.jar.JarInputStream
 
 object MethodCounter extends (File => Int) {
 
@@ -76,7 +74,8 @@ object MethodCounter extends (File => Int) {
         val readbuf = Array.ofDim[Byte](16384)
         val buf = new ByteArrayOutputStream
 
-        Using.fileInputStream(jar)(Using.jarInputStream(_) { jin =>
+        val jin = new JarInputStream(new FileInputStream(jar))
+        try {
           Iterator.continually(
             jin.getNextJarEntry
           ) takeWhile (_ != null) foreach { entry =>
@@ -90,8 +89,7 @@ object MethodCounter extends (File => Int) {
             }
             jin.closeEntry()
           }
-
-        })
+        } finally jin.close()
     }
 
     count

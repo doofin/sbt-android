@@ -11,7 +11,7 @@ import org.objectweb.asm.signature.SignatureVisitor
 import java.io.ByteArrayOutputStream
 import java.lang.reflect.Method
 
-object ReferenceFinder {
+object ReferenceFinderOld {
 
   def apply(jar: File, prefixes: Seq[String]): Seq[String] = {
     var current: String = null

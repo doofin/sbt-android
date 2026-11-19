@@ -1,7 +1,8 @@
 # Project structure and import map
 
-Basics:
-- build the project: sbt -java-home /usr/lib/jvm/java-8-openjdk/ compile
+Basics of test and building:
+- build the project: `sbt -java-home /usr/lib/jvm/java-8-openjdk/ compile`
+- publish the plugin locally: `sbt -java-home /usr/lib/jvm/java-8-openjdk/ publishLocal`
 
 
 ## Project at a glance

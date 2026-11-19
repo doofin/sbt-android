@@ -9,7 +9,7 @@ import org.objectweb.asm._
 
 import java.lang.reflect.Method
 
-object NativeFinder {
+object NativeFinderOld {
 
   def apply(classDir: File): Seq[String] = {
     var current: String = null
@@ -67,4 +67,5 @@ object NativeFinder {
         nativeList.distinct
     }
   }
+
 }

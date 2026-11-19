@@ -23,15 +23,9 @@ javacOptions ++= mjavacOptions
 
 scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature") ++ mjavacOptions
 
-sourceDirectories in Compile := baseDirectory(b => Seq(b / "src")).value
-
-scalaSource in Compile := baseDirectory(_ / "src").value
-
-scalaSource in Test := baseDirectory(_ / "test").value
-
 unmanagedBase := baseDirectory(_ / "libs").value
 
-resourceDirectory in Compile := baseDirectory(_ / "resources").value
+resourceDirectory in Compile := baseDirectory(_ / "src" / "main" / "resources").value
 
 aggregate := false
 

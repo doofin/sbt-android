@@ -38,27 +38,21 @@ Only one SBT project is needed. Use three folders under `src/main/scala/android/
 
 The three directories are organizational source folders in one project, not separate Scala packages, projects, or artifacts. Existing files can remain declared in package `android` while residing in these nested source directories; do not mechanically change package declarations to `android.coreLogic`, `android.androidTools`, or `android.sbtPlugin`. This preserves existing public `android.*` types. The folder names communicate intended ownership, but do not constrain imports or classpaths.
 
-Think how current code would fit into these categories
 ## Responsibilities and placement rules
 
 ### `coreLogic`
 
 Contains algorithms and data models that should not import `sbt.*`, `xsbti.*`, or `com.android.*`. It may depend on JDK/Scala APIs and selected libraries such as ASM/Javassist, as needed. “Core logic” does not automatically mean pure: network access, filesystem access, and concurrency still need explicit treatment. Since all folders compile in the same project, this rule is architectural guidance rather than a compiler-enforced restriction.
 
-Initial candidates, after refactoring SBT-specific file/path utilities out where necessary:
-
-- bytecode scanning algorithms from `MethodCounter`, `NativeFinder`, and `ReferenceFinder`;
-- jarsigner argument construction from `SignAndroidJar`;
-- plain layout/path value types extracted from `ProjectLayout` and `BuildOutput`;
-- update response models/decoding from `UpdateChecker`, with network transport supplied behind a small interface.
+Currently placed here are `SignAndroidJar`, `UpdateChecker`, `MethodCounter`, `NativeFinder`, and `ReferenceFinder`. The bytecode scanners now use JDK file/stream APIs rather than SBT traversal utilities; ASM/Javassist remain external dependencies. `UpdateChecker` is SBT-independent but performs network I/O and uses Argonaut. A plain layout model extracted from `ProjectLayout`/`BuildOutput` is a possible later addition.
 
 ### `androidTools`
 
-Groups code that operates on Android SDK/build/lint APIs, including resource processing, DEX, packaging, lint, SDK repository access, ProGuard, and Android signing. Keep Android operations here when they can be expressed without SBT task, state, logger, or cache types. Where the current implementation mixes these concerns, leave it in `sbtPlugin` until a safe seam is extracted; do not move a mixed file just to match the folder name.
+Groups Android-focused implementation files: `AndroidLint`, `androidRepo`, `Dex`, `Packaging`, `ProjectLayout`, `Resources`, `proguard`, `retrolambda`, and `signing`. Several of these still import SBT APIs for task streams, logging, caching, or file operations. Their placement reflects their primary Android operation, not a claim that the folder is already SBT-independent. Extract SBT-specific adapters to `sbtPlugin` in later steps where that can be done without changing behavior.
 
 ### `sbtPlugin`
 
-Contains the published SBT plugin implementation and its SBT-facing adapters:
+Contains the published SBT plugin implementation and SBT-facing adapters. It currently holds the plugin entry points, keys, DSL, settings, task orchestration, commands/parsers, dependencies, and SBT compatibility helpers:
 
 - plugin entry points, public keys, DSL, and compatibility facade;
 - settings, task and command definitions, including collection of SBT state and task inputs;
@@ -66,7 +60,7 @@ Contains the published SBT plugin implementation and its SBT-facing adapters:
 - calls into reusable logic and Android operations;
 - SBT/Zinc compatibility code.
 
-Keep `AndroidTestSettings`, `SbtInternals`, `VariantSettings`, and the `sbt.compat` bridge in this category. Retain the existing public `android.*` entry points and key API while reorganizing internal code. Avoid renaming packages solely to match directory names; Scala source directories can be used as responsibility groupings while stable types remain in their current packages.
+In particular, `AndroidAppPlugins`, `AndroidAppSettingsPlugin`, `AndroidGlobalPlugin`, `AndroidJarSettings`, `AndroidLibSettings`, `AndroidProjectSettings`, `AndroidTestSettings`, `Keys`, `PluginFail`, `SbtInternals`, `TaskBase`, `VariantSettings`, `aggregates`, `commands`, `compat`, `dependencies`, `dsl`, `package`, `parsers`, and `tasks` are here. Retain the existing public `android.*` entry points and key API. Avoid renaming packages solely to match directory names; source folders are organizational and stable types remain in their current packages.
 
 ## Dependency direction
 
@@ -80,6 +74,7 @@ androidTools ──────> Android SDK/build APIs
 - `androidTools` owns Android-facing operations; task wiring, SBT state, and SBT-specific logging remain in `sbtPlugin`.
 - `sbtPlugin` can call both categories and adapts their inputs/results to SBT tasks and logs.
 - Keep SBT/Zinc internal APIs inside clearly marked compatibility code in `sbtPlugin`.
+- The current `androidTools` folder still contains direct SBT imports in several files. The arrows describe intended responsibility flow, not a fully achieved dependency boundary; extract those adapters incrementally.
 
 These are source-organization rules within one compilation project, not enforceable module dependencies. The compiler will not prevent imports across the folders. Keep the boundaries visible through folder placement, import review, code review, and focused tests. Allow mixed implementations to remain in `sbtPlugin` until they can be separated without changing behavior.
 
@@ -87,20 +82,15 @@ These are source-organization rules within one compilation project, not enforcea
 
 In this table, `coreLogic/`, `androidTools/`, and `sbtPlugin/` are relative to `src/main/scala/android/` unless a full path is shown. These are source directories only; keep existing Scala package declarations stable.
 
-| Current source                                                                                                                                                                     | Proposed destination / treatment                                                                                                           |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `AndroidAppPlugins.scala`, `Keys.scala`, `package.scala`, `dsl.scala`                                                                                                              | `src/main/scala/android/sbtPlugin/`; preserve existing public `android.*` types and DSL surface.                                           |
-| `AndroidGlobalPlugin.scala`, `AndroidProjectSettings.scala`, `AndroidAppSettingsPlugin.scala`, `AndroidLibSettings.scala`, `AndroidJarSettings.scala`, `AndroidTestSettings.scala` | `src/main/scala/android/sbtPlugin/`; SBT plugin composition and settings.                                                                  |
-| `tasks.scala`, `aggregates.scala`, `TaskBase.scala`                                                                                                                                | `src/main/scala/android/sbtPlugin/`; task wiring and input assembly. Extract operations into `androidTools` only after removing SBT types. |
-| `commands.scala`, `parsers.scala`                                                                                                                                                  | `src/main/scala/android/sbtPlugin/`; SBT command/parser and state integration.                                                             |
-| `compat.scala`, `SbtInternals.scala`, `VariantSettings.scala`                                                                                                                      | `src/main/scala/android/sbtPlugin/`; isolate version-sensitive SBT internals within this category.                                         |
-| `SignAndroidJar.scala`                                                                                                                                                             | `src/main/scala/android/coreLogic/`; JDK-only argument construction; preserve public API if required.                                      |
-| `MethodCounter.scala`, `NativeFinder.scala`, `ReferenceFinder.scala`                                                                                                               | Put standalone scanning logic in `coreLogic/`; retain SBT traversal, caching, and reporting in `sbtPlugin/`.                               |
-| `ProjectLayout.scala`                                                                                                                                                              | Split plain layout values into `coreLogic/`; keep Android/SBT-aware resolution in `androidTools/` or `sbtPlugin/`.                         |
-| `UpdateChecker.scala`                                                                                                                                                              | Separate reusable model/decoding into `coreLogic/`; place network integration according to its dependencies.                               |
-| `androidRepo.scala`, `AndroidLint.scala`, `Resources.scala`, `Dex.scala`, `Packaging.scala`                                                                                        | Place separable Android-only operations in `androidTools/`; leave SBT wiring, streams, caches, and logging in `sbtPlugin/`.                |
-| `dependencies.scala`, `proguard.scala`, `retrolambda.scala`, `signing.scala`, `sdkInterfaces.scala`                                                                                | Treat as mixed code initially; split by actual type dependencies, keeping SBT-facing adapters in `sbtPlugin/`.                             |
-| `PluginFail.scala`                                                                                                                                                                 | Keep SBT exception conversion in `sbtPlugin/`; define neutral error types in `coreLogic/` only if needed.                                  |
+| Current source                                                                                                                                                                   | Proposed destination / treatment                                                                                             |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| `SignAndroidJar.scala`, `UpdateChecker.scala`, `MethodCounter.scala`, `NativeFinder.scala`, `ReferenceFinder.scala`                                                              | `src/main/scala/android/coreLogic/`; no direct SBT or Android imports after replacing scanner file traversal/stream helpers. |
+| `AndroidLint.scala`, `androidRepo.scala`, `Dex.scala`, `Packaging.scala`, `ProjectLayout.scala`, `Resources.scala`                                                               | `src/main/scala/android/androidTools/`; Android-focused code, some still coupled to SBT APIs.                                |
+| `proguard.scala`, `retrolambda.scala`, `signing.scala`                                                                                                                           | `src/main/scala/android/androidTools/`; Android build/signing operations with remaining SBT integration.                     |
+| `AndroidAppPlugins.scala`, `AndroidAppSettingsPlugin.scala`, `AndroidGlobalPlugin.scala`, `AndroidJarSettings.scala`, `AndroidLibSettings.scala`, `AndroidProjectSettings.scala` | `src/main/scala/android/sbtPlugin/`; public plugin composition and project settings.                                         |
+| `AndroidTestSettings.scala`, `Keys.scala`, `PluginFail.scala`, `SbtInternals.scala`, `TaskBase.scala`, `VariantSettings.scala`                                                   | `src/main/scala/android/sbtPlugin/`; SBT keys, test integration, task helpers, and compatibility code.                       |
+| `aggregates.scala`, `commands.scala`, `compat.scala`, `dependencies.scala`, `dsl.scala`, `package.scala`, `parsers.scala`, `tasks.scala`                                         | `src/main/scala/android/sbtPlugin/`; SBT task inputs, commands, dependency wiring, DSL, and orchestration.                   |
+| `sdkInterfaces.scala`                                                                                                                                                            | `src/main/scala/android/sbtPlugin/`; adapters bridging Android interfaces to SBT process/logging APIs.                       |
 
 ## Build and test layout
 
@@ -127,7 +117,7 @@ Test responsibilities:
 1. **Stabilize behavior first.** Record the existing build, compile, unit-test, `publishLocal`, and Scripted results before moving sources. Keep the SBT-version migration and source reorganization as separate changes where possible.
 2. **Normalize source roots.** Move the current flat `src/` Scala files to `src/main/scala` and resources to `src/main/resources`; update the custom source/resource settings in `build.sbt` and verify resource lookup paths.
 3. **Organize by responsibility.** Move files or extract smaller components into `src/main/scala/android/coreLogic`, `src/main/scala/android/androidTools`, and `src/main/scala/android/sbtPlugin`. Keep package declarations unchanged unless a package/API change is separately justified; preserve public `android.*` entry points and use compatibility facades where needed.
-4. **Separate mixed code gradually.** Start with JDK-only signing argument construction and bytecode algorithms. Move SBT traversal, task streams, caching, and reporting to `sbtPlugin`; move Android operations only after removing their SBT dependencies.
+4. **Separate mixed code gradually.** Keep JDK-only signing argument construction and bytecode algorithms in `coreLogic`. For Android-focused files already in `androidTools`, move SBT traversal, task streams, caching, and logging into `sbtPlugin` adapters where practical; do not treat folder placement alone as dependency isolation.
 5. **Add focused tests and import review.** Test reusable logic without SBT/Android setup, and test Android and SBT adapters at their respective boundaries. Review imports to catch accidental dependency direction changes; add brief comments for non-obvious integration imports rather than commenting every import. Folders alone do not enforce these rules.
 6. **Keep the build single-project.** Do not add SBT subprojects or separately published artifacts as part of this reorganization. Retain the existing root Scripted fixture layout and verify all intended groups, including `gradle-build` if supported.
 7. **Isolate SBT/Zinc compatibility.** Keep internal API touchpoints identifiable within `sbtPlugin`, behind small adapters where feasible, and validate them against supported SBT versions.
