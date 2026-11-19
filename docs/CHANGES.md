@@ -1,3 +1,6 @@
+## Migring to sbt 1.13.1
+progress: WIP
+
 ## New features in 2.0.1  ##
 
 * upgrade to sbt 1.3.13

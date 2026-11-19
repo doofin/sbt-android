@@ -1,5 +1,5 @@
 # sbt Android plugin #
-
+more docs at docs/ folder, including migration plan to sbt 1.13.1
 
 ## This fork updated to sbt <= 1.3.13
 run : sbt publishLocal
