@@ -1,9 +1,14 @@
 ## Migring to sbt 1.13.1
 progress: WIP
 
-## New features in 2.0.1  ##
+## New features in after 1.7.x
+2.0.5-SNAPSHOT:
+- prepare for sbt 1.13.1 migration
+- modularize the codebase, split sbt independent code from sbt dependent code
+- add munit tests
 
-* upgrade to sbt 1.3.13
+2.0.1-SNAPSHOT:
+- upgrade to sbt 1.3.13
 
 ## New features in 1.7.x ##
 

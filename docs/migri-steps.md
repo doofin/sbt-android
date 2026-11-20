@@ -2,7 +2,7 @@
 
 This summarizes the source reorganization performed before the planned sbt migration. See [the structure proposal](new-project-structure.md) for the full file mapping and [the migration plan](migri.md) for the sbt upgrade.
 
-## Changes made
+## 1st round
 
 1. Kept a single sbt plugin project and organized the Scala sources under `src/main/scala/android/` by responsibility: `coreLogic`, `androidTools`, and `sbtPlugin`.
 2. Preserved existing package declarations and plugin coordinates; the directories are organizational, not separate Scala packages, sbt projects, or enforced dependency boundaries.
@@ -14,5 +14,11 @@ This summarizes the source reorganization performed before the planned sbt migra
 
 - A Java 8 `clean test` build succeeded, compiling 36 Scala sources (including generated build information) with 10 warnings. No unit test sources were found in the old or new test roots.
 - The default Java 21 failed during startup of the pinned sbt 1.3.13; Java 8 was used for the successful build.
-- Dedicated scanner tests, resource lookup and packaged-artifact checks, `publishLocal`, Scripted fixtures, and a consumer build have not been verified after the reorganization.
-- Add focused tests, including traversal edge cases; separate mixed SBT adapters where practical; and review non-obvious imports for useful comments. No import comments were added in this pass.
+- At that point, dedicated scanner tests, resource lookup and packaged-artifact checks, `publishLocal`, Scripted fixtures, and a consumer build had not been verified after the reorganization.
+- Further work includes separating mixed SBT adapters where practical and reviewing non-obvious imports for useful comments. No import comments were added in this pass.
+
+## 2nd round: MUnit tests
+
+- Added MUnit as a test-only dependency and registered its test framework with sbt 1.3.13. The existing Scripted fixtures remain unchanged.
+- Added tests for bytecode scanning, including comparisons with the retained `*Old` implementations, malformed input, nested directories, and empty jars; also tested signing arguments and selected classpath resource names.
+- Java 8 `test` discovered and passed all 8 MUnit tests. These do not replace Scripted integration tests. Symlink and unreadable-directory traversal, packaged-artifact resources, `publishLocal`, Scripted fixtures, and a consumer build remain unverified.

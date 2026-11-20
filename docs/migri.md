@@ -6,6 +6,10 @@ Principles:
 - first, analyze the current codebase, and find out possible issues and potential improvements
 - make the project modular, split sbt independent code from sbt dependent code(like pure Scala code from code that depends on specific apis).
 - before the migration, think other aspects of improvements that may help the migration.
+- now think deeper: which files are semantically related and should be merged, which are semantically unrelated and should be separated, and are they named and organized in a way that makes best sense? 
+- apply best practices for functional programming.
+- Reduce duplication carefully: Use DRY (Don't Repeat Yourself) and modular components to avoid copy-pasted logic, while avoiding premature or excessive abstraction. 
+- Clean up code, improve naming, and pay down technical debt as requirements evolve
 
 Steps:
 - analyze the current codebase, make it modular, split sbt independent code from sbt dependent code(like pure Scala code from code that depends on other apis), and add import comments to suitable code locations. 

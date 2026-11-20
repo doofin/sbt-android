@@ -1,7 +1,7 @@
 name := "sbt-android"
 organization := "org.scala-android"
 
-val pluginVersion = "2.0.1-SNAPSHOT"
+val pluginVersion = "2.0.5-SNAPSHOT"
 val gradleBuildVersion = pluginVersion
 
 scalaVersion := "2.12.19"
@@ -25,7 +25,9 @@ scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature") ++ mjavacOptions
 
 unmanagedBase := baseDirectory(_ / "libs").value
 
-resourceDirectory in Compile := baseDirectory(_ / "src" / "main" / "resources").value
+resourceDirectory in Compile := baseDirectory(
+  _ / "src" / "main" / "resources"
+).value
 
 aggregate := false
 
@@ -62,8 +64,11 @@ libraryDependencies ++= Seq(
 //  "com.android.tools.external.com-intellij" % "uast" % "145.597.4", // because google didn't sync the correct version...
   "io.argonaut" %% "argonaut" % "6.2.3",
   "net.orfjackal.retrolambda" % "retrolambda" % "2.5.3",
-  "org.scalaz" %% "scalaz-core" % "7.2.20"
+  "org.scalaz" %% "scalaz-core" % "7.2.20",
+  "org.scalameta" %% "munit" % "0.7.29" % Test
 )
+
+testFrameworks += new TestFramework("munit.Framework")
 
 scriptedLaunchOpts ++= Seq(
   "-Xmx1024m",
