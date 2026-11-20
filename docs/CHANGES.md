@@ -602,7 +602,7 @@ progress: WIP
   * Conversion of some settings to tasks: `packageName`, `manifest`,
     `packageForR`, `versionName`, `versionCode`, `minSdkVersion`,
     `targetSdkVersion`
-    * See all [available keys](src/keys.scala)
+    * See all [available keys](../src/main/scala/android/sbtPlugin/keys.scala)
   * TypedResource improvements, now uses value class extensions for runtime
     performance improvements (all apps must now use scala 2.10+)
     * Renamed `TypedViewHolder` in favor of a single `TypedFindView`,

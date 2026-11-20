@@ -220,7 +220,7 @@ object Dex {
           )
           (bin * "*.dex" get) foreach (_.delete())
         }
-        s.log.info(s"Dex.scala: Generating dex, multidex=${dexOptions.multi}")
+        s.log.info(s"dex.scala: Generating dex, multidex=${dexOptions.multi}")
         s.log.debug("Dex inputs: " + inputs)
 
         val tmp = s.cacheDirectory / "dex"

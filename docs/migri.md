@@ -22,13 +22,13 @@ Steps:
 - The launcher is pinned to sbt 1.3.13 in `project/build.properties`. Comments report that 1.4.9 and 1.9.9 did not work, but do not include the failure details.
 - The plugin build uses Scala 2.12.19 and sbt-buildinfo 0.8.0.
 - Publishing configuration depends on sbt-bintray 0.5.4 and a Bintray resolver.
-- `src/AndroidTestSettings.scala` customizes incremental compilation using sbt/Zinc internals and documents an `xsbti.compile.Setup.of` overload issue.
+- [src/main/scala/android/sbtPlugin/androidTestSettings.scala](../src/main/scala/android/sbtPlugin/androidTestSettings.scala) customizes incremental compilation using sbt/Zinc internals and documents an `xsbti.compile.Setup.of` overload issue.
 
 ## Steps
 
 1. **Establish a baseline.** On the current toolchain, record build load, compile, test, scripted-test, and publishLocal results. Preserve exact errors. Determine what failed with sbt 1.4.9/1.9.9, if possible.
 2. **Try the launcher bump in a branch.** Change the sbt launcher to 1.13.1 and first check whether the build loads. Do not combine this with unrelated cleanup.
-3. **Resolve compilation/API breakages.** Prioritize `AndroidTestSettings.scala`: verify the `Defaults` compiler helpers, Zinc types, and `Setup.of`/`Inputs.of` construction against sbt 1.13.1. Update the implementation to supported APIs if necessary, preserving Android test compilation behavior.
+3. **Resolve compilation/API breakages.** Prioritize `androidTestSettings.scala`: verify the `Defaults` compiler helpers, Zinc types, and `Setup.of`/`Inputs.of` construction against sbt 1.13.1. Update the implementation to supported APIs if necessary, preserving Android test compilation behavior.
 4. **Verify meta-build plugins and resolvers.** Test whether sbt-buildinfo and scripted-plugin resolve and work. Assess the obsolete Bintray publishing setup; replace or remove it if unavailable, updating its settings in `build.sbt` as needed. Check generated Metals/bloop settings as well.
 5. **Review build-definition compatibility.** Confirm the plugin uses an appropriate Scala version and sbt plugin cross-build configuration. Modernize legacy `in` scoping syntax to slash syntax where appropriate, after the build compiles.
 6. **Run regression tests.** Run plugin compile and unit tests, then `publishLocal` and scripted fixtures with sbt 1.13.1. The current scripted setup selects `android-sdk-plugin` and `no-travis`; verify whether the `gradle-build` fixtures also need inclusion. Note any Android SDK/device prerequisites.
