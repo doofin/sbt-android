@@ -31,6 +31,7 @@ results of 2nd round:
 ## 3rd round
 instructions:
 - Review the current codebase and the new structure proposal. Identify files that are semantically related and should be merged, and files that are semantically unrelated and should be separated. Consider whether they are named and organized in a way that makes the best sense.
+- check what code can be further modularized so it's easier to test with munit and to migrate to newer sbt versions. 
 
 
 ### Findings
