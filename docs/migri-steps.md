@@ -31,13 +31,13 @@ results of 2nd round:
 ## 3rd round
 instructions:
 - Review the current codebase and the new structure proposal. Identify files that are semantically related and should be merged, and files that are semantically unrelated and should be separated. Consider whether they are named and organized in a way that makes the best sense.
-- check what code can be further modularized so it's easier to test with munit and to migrate to newer sbt versions. 
+- check what code can be further modularized so it's easier to test with munit and to migrate to newer sbt versions. if possible, add those tests with munit.
 
 
 ### Findings
 
 - **Current organization:** the project now uses `src/main/scala` and `src/main/resources`, with source folders `android/coreLogic`, `android/androidTools`, `android/sbtPlugin`, plus `android/misc`. These are still one Scala package/project in practice: folder placement does not enforce package or dependency boundaries. The test tree has MUnit suites, while consumer-level tests remain in `sbt-test/`.
-- **Docs need synchronization:** `docs/project-structure.md` still describes the former flat `src/`, `test/`, and root `resources/` layout. Update its repository table and source catalog to match the current tree before using it as migration guidance.
+- **Structure documentation:** `docs/project-structure.md` has been synchronized with the current source, resource, and test roots, responsibility folders, MUnit suites, and remaining SBT/Android coupling. Keep it updated as boundaries change.
 - **Retained scanner copies:** the production scanners are under `coreLogic`; three older copies in `android/misc` are referenced by `BytecodeScannerSuite` as parity oracles. Keep them only while useful for regression comparison, then move them to test sources or remove them; `misc` is not a meaningful long-term name and compiling old copies into the plugin artifact is unnecessary.
 - **Keep central contracts distinct:** do not merge `Keys.scala` into settings or task implementations. It is the plugin's key registry/public configuration surface. Keep plugin entry points, DSL/macro code, and key definitions discoverable and stable during the sbt upgrade.
 - **Potential small cohesion groupings:** `compat.scala` and `SbtInternals.scala` are both SBT-internal compatibility shims and could be documented or grouped together, but combining files is low priority and must preserve the special `sbt` package names. `commands.scala` and `parsers.scala` are related by command behavior, but the parser object also performs state/task/SDK lookups; consolidate only if that reduces coupling rather than merely reducing file count.
@@ -47,4 +47,4 @@ instructions:
 
 ### Outcome and next actions
 
-No source files were merged or split in this analysis round. Recommended order: synchronize `docs/project-structure.md`; retain scanner reference copies only until parity tests are trusted, then move/remove them; split the task/command monoliths in small behavior-preserving steps; address SBT adapters as a distinct boundary-refactoring effort. Keep public plugin entry points, key names/types, DSL, artifact coordinates, and Scripted fixtures stable.
+No broad task/command orchestration files were merged or split in this analysis round; the bounded manifest XML helper extraction is the one additional modularization step completed, with behavior covered by MUnit. Recommended next actions: retain scanner reference copies only until parity tests are trusted, then move/remove them; split the task/command monoliths in small behavior-preserving steps; address SBT adapters as a distinct boundary-refactoring effort. Keep public plugin entry points, key names/types, DSL, artifact coordinates, and Scripted fixtures stable. The planned SBT launcher migration itself has not been attempted in this round.

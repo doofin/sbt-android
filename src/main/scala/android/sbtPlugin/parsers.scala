@@ -3,7 +3,7 @@ package android
 import java.io.File
 
 import scala.collection.JavaConverters._
-import scala.xml.{Elem, Node, NodeSeq, XML}
+import scala.xml.XML
 
 import sbt.{Def, State, TaskKey}
 import sbt.Def.Initialize
@@ -21,17 +21,6 @@ import sjsonnew.{Builder, JsonFormat, Unbuilder}
   *   pfnguyen
   */
 private[android] object parsers {
-  val ACTION_MAIN = "android.intent.action.MAIN"
-  def activityName(n: Node): String =
-    n.attribute(Resources.ANDROID_NS, "name").head.text
-  def findMainActivities(element: Elem): NodeSeq = {
-    for {
-      a <- element \\ "activity" ++ element \\ "activity-alias"
-      i <- a \ "intent-filter" \ "action"
-      nm <- i.attribute(Resources.ANDROID_NS, "name").toSeq.flatten
-      m <- nm if m.text == ACTION_MAIN
-    } yield a
-  }
   def activityParser: Initialize[State => Parser[Option[String]]] =
     loadForParser2(Keys.processManifest, Keys.applicationId) {
       (state, mfile, appid) =>
@@ -40,7 +29,8 @@ private[android] object parsers {
           pkg <- appid
         } yield {
           val manifest = XML.loadFile(f)
-          val names = findMainActivities(manifest) map activityName
+          val names = ManifestActivities.findMainActivities(manifest) map
+            ManifestActivities.activityName
           EOF.map(_ => None) | (Space ~> opt(
             (token(StringBasic.examples(pkg + "/")) ~ token(
               StringBasic.examples(names: _*)

@@ -1885,11 +1885,11 @@ object Tasks extends TaskBase {
       val manifestXml = l.processedManifest
       val m = XML.loadFile(manifestXml)
       // if an arg is specified, try to launch that
-      parsers.activityParser.parsed orElse parsers
+      parsers.activityParser.parsed orElse ManifestActivities
         .findMainActivities(m)
         .headOption
         .map(activity => {
-          val name = activity.attribute(ANDROID_NS, "name").get.head.text
+          val name = ManifestActivities.activityName(activity)
           "%s/%s" format (p, if (name.indexOf(".") == -1) "." + name else name)
         }) match {
         case Some(intent) =>
