@@ -12,12 +12,96 @@ import sbt.{Fork, ForkOptions, Logger}
 
 import collection.JavaConverters._
 
+private[android] object SdkProgressWarnings {
+  val metadataSummary =
+    "Android SDK metadata warnings were summarized; set verboseSdkWarnings in Android := true for details"
+  private val reportedSummaries = new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
+  private val reportedMessages =
+    new java.util.WeakHashMap[AnyRef, scala.collection.mutable.Set[String]]()
+  private val verboseByLogger = new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
+  val consoleSummaryKey: AnyRef = new Object
+
+  def configureVerbose(key: AnyRef, enabled: Boolean): Unit = synchronized {
+    verboseByLogger.put(key, java.lang.Boolean.valueOf(enabled))
+  }
+
+  def isVerbose(key: AnyRef): Boolean = synchronized {
+    Option(verboseByLogger.get(key)).exists(_.booleanValue())
+  }
+
+  def reportSummaryOnce(key: AnyRef, emit: String => Unit): Unit = synchronized {
+    if (!reportedSummaries.containsKey(key)) {
+      reportedSummaries.put(key, java.lang.Boolean.TRUE)
+      emit(metadataSummary)
+    }
+  }
+
+  def reportMessageOnce(
+      key: AnyRef,
+      message: String,
+      emit: String => Unit
+  ): Boolean = synchronized {
+    val messages = Option(reportedMessages.get(key)).getOrElse {
+      val created = scala.collection.mutable.Set.empty[String]
+      reportedMessages.put(key, created)
+      created
+    }
+    if (messages.add(message)) {
+      emit(message)
+      true
+    } else false
+  }
+
+  def shouldSuppress(message: String): Boolean =
+    message != null && message.trim.startsWith("Mapping new ns ")
+
+  def shouldSummarize(message: String): Boolean =
+    message != null &&
+      (message.contains("cvc-complex-type.2.4.a:") ||
+        message.contains("unexpected element (uri:"))
+}
+
+private[android] final class SdkWarningReporter(
+    verbose: Boolean,
+  emit: String => Unit,
+  summaryKey: AnyRef = new Object
+) {
+  private def isVerbose: Boolean =
+    verbose || SdkProgressWarnings.isVerbose(summaryKey)
+
+  def warning(message: String): Boolean = {
+    if (SdkProgressWarnings.shouldSuppress(message)) {
+      if (isVerbose) {
+        emit(message)
+        true
+      } else false
+    } else if (isVerbose || !SdkProgressWarnings.shouldSummarize(message)) {
+      if (isVerbose) {
+        emit(message)
+        true
+      } else SdkProgressWarnings.reportMessageOnce(summaryKey, message, emit)
+    } else {
+      SdkProgressWarnings.reportSummaryOnce(summaryKey, emit)
+      false
+    }
+  }
+}
+
 /** @author
   *   pfnguyen
   */
 
-case class SbtAndroidProgressIndicator(log: Logger)
+case class SbtAndroidProgressIndicator(
+    log: Logger,
+    verboseSdkWarnings: Boolean = false
+)
     extends ProgressIndicatorAdapter {
+  private[this] val warningReporter = new SdkWarningReporter(
+    verboseSdkWarnings,
+    message => log.warn(message),
+    log
+  )
+
   override def logError(s: String, e: Throwable) = {
     log.error(s)
     if (e != null)
@@ -25,8 +109,8 @@ case class SbtAndroidProgressIndicator(log: Logger)
   }
 
   override def logWarning(s: String, e: Throwable) = {
-    log.warn(s)
-    if (e != null)
+    val showDetails = warningReporter.warning(s)
+    if (e != null && showDetails)
       log.trace(e)
   }
 
@@ -35,6 +119,11 @@ case class SbtAndroidProgressIndicator(log: Logger)
 
 case class PrintingProgressIndicator(showProgress: Boolean = true)
     extends ProgressIndicatorAdapter {
+  private[this] val warningReporter = new SdkWarningReporter(
+    verbose = false,
+    message => println("[warn] " + message),
+    SdkProgressWarnings.consoleSummaryKey
+  )
   val SPINNER =
     "|" ::
       "/" ::
@@ -93,7 +182,7 @@ case class PrintingProgressIndicator(showProgress: Boolean = true)
   }
 
   override def logWarning(s: String, e: Throwable) = {
-    println("[warn] " + s)
+    warningReporter.warning(s)
   }
 }
 object NullProgressIndicator extends ProgressIndicatorAdapter
@@ -113,7 +202,9 @@ case class SbtDebugLogger(lg: Logger) extends ILogger {
     lg.debug(String.format(fmt, args: _*))
   }
   override def warning(fmt: java.lang.String, args: Object*) {
-    lg.debug(String.format(fmt, args: _*))
+    val message = String.format(fmt, args: _*)
+    if (!SdkProgressWarnings.shouldSuppress(message))
+      lg.debug(message)
   }
   override def error(t: Throwable, fmt: java.lang.String, args: Object*) {
     lg.debug(String.format(fmt, args: _*))
@@ -121,9 +212,20 @@ case class SbtDebugLogger(lg: Logger) extends ILogger {
       lg.trace(t)
   }
 }
-case class SbtILogger() extends ILogger {
-  def apply(log: Logger) = this.log = Some(log)
+case class SbtILogger(verboseSdkWarnings: Boolean = false) extends ILogger {
+  def apply(logger: Logger): Unit = {
+    log = Some(logger)
+    SdkProgressWarnings.configureVerbose(logger, verboseSdkWarnings)
+    warningReporter = Some(
+      new SdkWarningReporter(
+        verboseSdkWarnings,
+        message => logger.warn(message),
+        logger
+      )
+    )
+  }
   private[this] var log: Option[Logger] = None
+  private[this] var warningReporter: Option[SdkWarningReporter] = None
   override def verbose(fmt: java.lang.String, args: Object*) {
     log.foreach(_.debug(String.format(fmt, args: _*)))
   }
@@ -131,7 +233,8 @@ case class SbtILogger() extends ILogger {
     log.foreach(_.debug(String.format(fmt, args: _*)))
   }
   override def warning(fmt: java.lang.String, args: Object*) {
-    log.foreach(_.warn(String.format(fmt, args: _*)))
+    val message = String.format(fmt, args: _*)
+    warningReporter.foreach(_.warning(message))
   }
   override def error(t: Throwable, fmt: java.lang.String, args: Object*) {
     log.foreach { l =>

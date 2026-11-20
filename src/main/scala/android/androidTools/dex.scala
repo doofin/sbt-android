@@ -226,15 +226,6 @@ object Dex {
         val tmp = s.cacheDirectory / "dex"
         tmp.mkdirs()
 
-        def minimalMainDexParam = if (
-          dexOptions.multi && dexOptions.minimizeMain
-        ) "--minimal-main-dex"
-        else ""
-
-        val additionalDexParams =
-          (dexOptions.additionalParams.toList :+ minimalMainDexParam).distinct
-            .filterNot(_.isEmpty)
-
         val predex2 = pd flatMap (_._2 * "*.dex" get)
         s.log.debug("DEX IN: " + dexIn)
         s.log.debug("PRE-DEXED: " + predex2)
@@ -262,7 +253,7 @@ object Dex {
           bin,
           dexOptions.multi,
           if (!legacy) null else dexOptions.mainClassesConfig,
-          dexOptions.toDexOptions(),
+          dexOptionsWithMainParams(dexOptions),
           SbtProcessOutputHandler(s.log)
         )
         s.log.info(
@@ -275,6 +266,16 @@ object Dex {
     }(dexIn.toSet)
 
     bin
+  }
+
+  private[android] def dexOptionsWithMainParams(
+      dexOptions: Aggregate.Dex
+  ): com.android.builder.core.DexOptions = {
+    val minimalMainDexParam =
+      if (dexOptions.multi && dexOptions.minimizeMain) Seq("--minimal-main-dex")
+      else Nil
+    val params = (dexOptions.additionalParams ++ minimalMainDexParam).distinct
+    dexOptions.toDexOptions(additionalParamsOverride = params)
   }
 
   def predexFileName(inFile: File): String = {
@@ -350,6 +351,7 @@ object Dex {
       proguardRules: Seq[String],
       inputs: Seq[File],
       mainDexClasses: Seq[String],
+      minimizeMain: Boolean,
       bt: BuildToolInfo,
       s: sbt.Keys.TaskStreams
   )(implicit m: BuildOutput.Converter): File = {
@@ -360,7 +362,7 @@ object Dex {
         IO.writeLines(mainDexListTxt, mainDexClasses)
       } else {
         FileFunction.cached(
-          s.cacheDirectory / "mainDexClasses",
+          s.cacheDirectory / s"mainDexClasses-minimize-$minimizeMain",
           FilesInfo.lastModified
         ) { in =>
           makeMultiDexRoots(
@@ -373,7 +375,9 @@ object Dex {
             layout.maindexRootsJar
           )
           val mainClasses =
-            createMainDexList(inputs, layout.maindexRootsJar, bt)
+            if (minimizeMain)
+              mainDexRootsFromJar(layout.maindexRootsJar)
+            else createMainDexList(inputs, layout.maindexRootsJar, bt)
           IO.writeLines(mainDexListTxt, mainClasses)
           s.log.warn("Set mainDexClasses to improve build times:")
           s.log.warn(
@@ -386,6 +390,20 @@ object Dex {
     } else
       mainDexListTxt.delete()
     mainDexListTxt
+  }
+
+  private[android] def mainDexRootsFromJar(jar: File): List[String] = {
+    val zip = new java.util.zip.ZipFile(jar)
+    try {
+      val entries = zip.entries()
+      val roots = List.newBuilder[String]
+      while (entries.hasMoreElements) {
+        val entry = entries.nextElement()
+        if (!entry.isDirectory && entry.getName.endsWith(".class"))
+          roots += entry.getName
+      }
+      roots.result().sorted
+    } finally zip.close()
   }
 
   def makeMultiDexRoots(

@@ -1251,6 +1251,7 @@ object Tasks extends TaskBase {
       dexMainClassesRules.value,
       dexInputs.value._2,
       dexMainClasses.value,
+      dexMinimizeMain.value,
       buildToolInfo.value,
       streams.value
     )

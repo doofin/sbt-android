@@ -92,14 +92,17 @@ case object AndroidGlobalPlugin extends AutoPlugin {
       targetHash: String,
       sdkHandler: AndroidSdkHandler,
       showProgress: Boolean,
-      slog: Logger
+      slog: Logger,
+      verboseSdkWarnings: Boolean = false
   ): IAndroidTarget = {
     SdkInstaller.retryWhileFailed("determine platform target", slog) {
       val manager =
-        sdkHandler.getAndroidTargetManager(SbtAndroidProgressIndicator(slog))
+        sdkHandler.getAndroidTargetManager(
+          SbtAndroidProgressIndicator(slog, verboseSdkWarnings)
+        )
       val ptarget = manager.getTargetFromHashString(
         targetHash,
-        SbtAndroidProgressIndicator(slog)
+        SbtAndroidProgressIndicator(slog, verboseSdkWarnings)
       )
       SdkInstaller.autoInstallPackage(
         sdkHandler,
@@ -112,7 +115,7 @@ case object AndroidGlobalPlugin extends AutoPlugin {
       )
       manager.getTargetFromHashString(
         targetHash,
-        SbtAndroidProgressIndicator(slog)
+        SbtAndroidProgressIndicator(slog, verboseSdkWarnings)
       )
     }
   }

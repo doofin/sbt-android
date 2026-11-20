@@ -84,6 +84,10 @@ object Keys {
     "show-sdk-progress",
     "Show Android SDK installation progress"
   ) in Android
+  val verboseSdkWarnings = SettingKey[Boolean](
+    "verbose-sdk-warnings",
+    "Show full Android SDK metadata warnings instead of concise summaries"
+  ) in Android
   val updateCheck = TaskKey[Unit](
     "update-check",
     "Check for a new version of the plugin"

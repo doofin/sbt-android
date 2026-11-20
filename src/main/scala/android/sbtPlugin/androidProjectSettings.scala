@@ -267,6 +267,7 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
       },
       updateCheckSdk := SdkInstaller.updateCheckSdkTaskDef.value,
       showSdkProgress := true,
+      verboseSdkWarnings := false,
       antLayoutDetector := {
         val log = streams.value.log
         val prj = thisProjectRef.value.project
@@ -490,7 +491,7 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
         foundNdk orElse SdkLayout.sdkFallback(cache)
       },
       ilogger := {
-        val logger = SbtILogger()
+        val logger = SbtILogger(verboseSdkWarnings.value)
 
         { l =>
           logger(l)
@@ -542,7 +543,7 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
         .sdkManager(file(sdkPath.value), showSdkProgress.value, sLog.value),
       buildToolInfo := {
         val slog = sLog.value
-        val ind = SbtAndroidProgressIndicator(slog)
+        val ind = SbtAndroidProgressIndicator(slog, verboseSdkWarnings.value)
         val sdkHandler = sdkManager.value
         val showProgress = showSdkProgress.value
         val r = buildToolsVersion.value map { version =>
@@ -631,7 +632,8 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
           targetHash,
           sdkHandler,
           showSdkProgress.value,
-          slog
+          slog,
+          verboseSdkWarnings.value
         )
         val logger = ilogger.value(slog)
         sdkLoader.value.getTargetInfo(

@@ -45,14 +45,16 @@ private[android] object parsers {
 
   private[this] def sdkManager(s: State): AndroidSdkHandler = {
     val e = sbt.Project.extract(s)
-    def existing = {
-      val androids = e.structure.allProjects map (p =>
+    val androids = e.structure.allProjects map (p =>
         sbt.ProjectRef(e.structure.root, p.id)
       ) filter { ref =>
         e.getOpt(Keys.projectLayout in ref).isDefined
       }
-      androids.headOption.map(p => e.get(Keys.Internal.sdkManager in p))
-    }
+    val verbose = androids.iterator
+      .flatMap(ref => e.getOpt(Keys.verboseSdkWarnings in ref))
+      .toSeq.headOption.getOrElse(false)
+    SdkProgressWarnings.configureVerbose(s.log, verbose)
+    val existing = androids.headOption.map(p => e.get(Keys.Internal.sdkManager in p))
 
     e.getOpt(Keys.Internal.sdkManager)
       .orElse(existing)
@@ -67,7 +69,10 @@ private[android] object parsers {
       )
   }
   def installSdkParser: State => Parser[Option[String]] = state => {
-    val ind = SbtAndroidProgressIndicator(state.log)
+    val ind = SbtAndroidProgressIndicator(
+      state.log,
+      SdkProgressWarnings.isVerbose(state.log)
+    )
     val repomanager = sdkManager(state).getSdkManager(ind)
     val newpkgs = repomanager.getPackages.getNewPkgs.asScala
       .filterNot(_.obsolete)
@@ -81,7 +86,10 @@ private[android] object parsers {
   // noinspection MutatorLikeMethodIsParameterless
   def updateSdkParser: State => Parser[Either[Option[String], String]] =
     state => {
-      val ind = SbtAndroidProgressIndicator(state.log)
+      val ind = SbtAndroidProgressIndicator(
+        state.log,
+        SdkProgressWarnings.isVerbose(state.log)
+      )
       val repomanager = sdkManager(state).getSdkManager(ind)
       val updates =
         repomanager.getPackages.getUpdatedPkgs.asScala.toList.collect {

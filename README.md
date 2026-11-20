@@ -1,10 +1,37 @@
-# sbt Android plugin #
+# sbt Android plugin
+Basic facts:
+- jdk version: 8, or 1.8
+- the Scala version for Scala android projects is 2.11.12, and the Scala version for this plugin is 2.12(depending on the sbt version)
+- always use `sbt -java-home /usr/lib/jvm/java-8-openjdk/` as this project uses older sbt.
+
+
+To build the plugin and use this development version, run 
+```
+sbt publishLocal
+```
+
 more docs at docs/ folder, including migration plan to sbt 1.13.1
 
-## This fork updated to sbt <= 1.3.13
-run : sbt publishLocal
+## Basic configuration
 
-version: 2.0.1-SNAPSHOT
+Keep multidex opt-in and enable it when the app exceeds the single-DEX method-reference limit.
+
+- **Benefit:** `dexMulti` splits the app across DEX files.
+- **Tradeoff:** it adds build/package complexity; devices below API 21 also require legacy multidex startup support.
+
+If a legacy multidex build fails because its primary DEX is too large, `dexMinimizeMain` can reduce the main-dex list:
+
+```scala
+dexMulti := true
+dexMinimizeMain := true
+```
+
+- **Benefit:** only selected startup classes are kept in the primary DEX, helping avoid main-dex capacity errors.
+- **Tradeoff:** a required startup dependency may be left in a secondary DEX. Test on devices below API 21 before shipping.
+
+## This fork
+current version: 2.0.5-SNAPSHOT
+- sbt: 1.3.13
 
 ## scala 2.12/3 support: 
 https://github.com/scala-android/sbt-android/issues/345
@@ -146,7 +173,13 @@ found on the #sbt-android IRC channel on Freenode, or the
    platformTarget := "android-24"
    ```
 
-   The Android Developer pages provides a [list of applicable version codes](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html#ApiLevels).
+  The Android Developer pages provides a [list of applicable version codes](https://developer.android.com/guide/topics/manifest/uses-sdk-element.html#ApiLevels).
+
+8. (OPTIONAL) Android SDK repository metadata warnings are summarized by default. To show full warning details, including schema messages and namespace mappings, add this setting to `build.sbt`:
+
+  ```scala
+  verboseSdkWarnings in Android := true
+  ```
 
 7. Now you will be able to run SBT, some available commands in sbt are:
    * `compile`
@@ -172,7 +205,7 @@ found on the #sbt-android IRC channel on Freenode, or the
      by prefixing the command with a `~`. `~ android:package-debug`
      will continuously build a debug build any time one of the project's
      source files is modified.
-7. If you want `sbt-android` to automatically sign release packages
+9. If you want `sbt-android` to automatically sign release packages
    add the following lines to `local.properties` (or any file.properties of
    your choice that you will not check in to source control):
    * `key.alias: KEY-ALIAS`

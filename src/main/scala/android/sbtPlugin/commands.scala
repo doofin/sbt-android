@@ -57,30 +57,32 @@ object Commands {
     if (list.isEmpty) {
       state.log.warn("No devices connected")
     } else {
-      state.log.info(
-        " %-22s %-16s %8s Android Version" format ("Serial", "Model", "Battery %")
-      )
-      // noinspection ScalaMalformedFormatString
-      state.log.info(
-        " %s %s %s ---------------" format ("-" * 22, "-" * 16, "-" * 9)
-      )
+      state.log.info(DeviceListFormatter.header)
+      state.log.info(DeviceListFormatter.separator)
       list foreach { dev =>
-        val name = Option(dev.getAvdName) orElse
-          Option(dev.getProperty(IDevice.PROP_DEVICE_MODEL)) getOrElse (if (
-                                                                          dev.isEmulator
-                                                                        ) "emulator"
-                                                                        else
-                                                                          "device")
+        val serial = Try(dev.getSerialNumber).getOrElse("unknown")
+        val name = Try {
+          Option(dev.getAvdName)
+            .orElse(Option(dev.getProperty(IDevice.PROP_DEVICE_MODEL)))
+            .getOrElse(if (dev.isEmulator) "emulator" else "device")
+        }.getOrElse("device")
+        val battery = Try(Option(dev.getBattery.get).map(_.toString))
+          .getOrElse(None)
+        val androidVersion = Try(
+          Option(dev.getProperty(IDevice.PROP_BUILD_VERSION)).getOrElse("--")
+        ).getOrElse("--")
+        val apiLevel = Try(
+          Option(dev.getProperty(IDevice.PROP_BUILD_API_LEVEL)).getOrElse("--")
+        ).getOrElse("--")
 
-        val sel = defaultDevice.fold(" ") { d =>
-          if (d == dev.getSerialNumber) "*" else " "
-        }
-
-        Try(
-          state.log.info(
-            f"$sel${dev.getSerialNumber}%-22s $name%-16s ${dev.getBattery.get}%8s%% ${dev
-                .getProperty(IDevice.PROP_BUILD_VERSION)}%-6s API ${dev
-                .getProperty(IDevice.PROP_BUILD_API_LEVEL)}"
+        state.log.info(
+          DeviceListFormatter.row(
+            serial,
+            name,
+            battery,
+            androidVersion,
+            apiLevel,
+            defaultDevice.contains(serial)
           )
         )
       }

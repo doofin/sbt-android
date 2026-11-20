@@ -96,7 +96,10 @@ object Aggregate {
   ) {
     lazy val incremental: Boolean = inputs._1 && !multi
 
-    def toDexOptions(incremental: Boolean = incremental): DexOptions =
+    def toDexOptions(
+        incremental: Boolean = incremental,
+        additionalParamsOverride: Seq[String] = additionalParams
+    ): DexOptions =
       new DexOptions {
         override def getJavaMaxHeapSize: String = maxHeap
         override def getJumboMode: Boolean = false
@@ -107,9 +110,9 @@ object Aggregate {
         override def getDexInProcess: Boolean = dexInProcess
         override def getKeepRuntimeAnnotatedClasses = true
         override def getAdditionalParameters: util.List[String] =
-          additionalParams.asJava
+          additionalParamsOverride.asJava
       }
-  }
+    }
 
   private[android] case class Proguard(
       useProguard: Boolean,

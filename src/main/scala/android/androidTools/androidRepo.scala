@@ -385,7 +385,10 @@ object SdkInstaller extends TaskBase {
     concurrent.Future {
       val sdkHandler = Keys.Internal.sdkManager.value
       val log = sbt.Keys.streams.value.log
-      val ind = SbtAndroidProgressIndicator(log)
+      val ind = SbtAndroidProgressIndicator(
+        log,
+        Keys.verboseSdkWarnings.value
+      )
       val repomanager = sdkHandler.getSdkManager(ind)
       repomanager.loadSynchronously(
         1.day.toMillis,
