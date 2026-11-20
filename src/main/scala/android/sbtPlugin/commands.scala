@@ -255,7 +255,7 @@ object Commands {
       val target = name map {
         entry.getFullPath + "/" + _
       } getOrElse entry.getFullPath
-      state.log.info("Pulling [%s] to [%s]" format (target, f))
+      AndroidLog.info(state.log, "Pulling [%s] to [%s]" format (target, f))
       targetDevice(sdkpath(state), state.log) match {
         case Some(d) =>
           val dest = if (f.isDirectory) {
@@ -287,7 +287,7 @@ object Commands {
         if (entry.isDirectory) entry.getFullPath + "/" + f.getName
         else entry.getFullPath
       }
-      state.log.info("Pushing [%s] to [%s]" format (f, target))
+      AndroidLog.info(state.log, "Pushing [%s] to [%s]" format (f, target))
       if (!f.isFile)
         PluginFail(f + " is not a file")
       targetDevice(sdkpath(state), state.log) match {
@@ -350,7 +350,7 @@ object Commands {
 
     defaultDevice = devices find (_.getSerialNumber == dev) map { dev =>
       val serial = dev.getSerialNumber
-      state.log.info("default device: " + serial)
+      AndroidLog.info(state.log, "default device: " + serial)
       serial
     }
     state
@@ -386,12 +386,12 @@ object Commands {
 
     val d = targetDevice(sdk, state.log).get
     if (adbWifiOn) {
-      state.log.info("turning ADB-over-wifi off")
+      AndroidLog.info(state.log, "turning ADB-over-wifi off")
       Seq(adbPath, "-s", d.getSerialNumber, "usb").!
 
       state.remove(wifiState)
     } else {
-      state.log.info("turning ADB-over-wifi on")
+      AndroidLog.info(state.log, "turning ADB-over-wifi on")
 
       val receiver = new ShellResult()
       d.executeShellCommand("ip addr show dev wlan0", receiver)
@@ -451,7 +451,7 @@ object Commands {
 
     if ((base * "*.sbt").get.nonEmpty || (root * "*.sbt").get.nonEmpty)
       PluginFail("SBT build files already exist at this location")
-    state.log.info("Creating SBT project files")
+    AndroidLog.info(state.log, "Creating SBT project files")
     val build = root / "project"
     build.mkdirs()
     val properties = build / "build.properties"
@@ -590,7 +590,7 @@ object Commands {
     if (layout.manifest.exists) {
       PluginFail("An android project already exists in this location")
     } else {
-      log.info("Creating project: " + name)
+      AndroidLog.info(log, "Creating project: " + name)
       val gitignore = root / ".gitignore"
       val ignores = Seq(
         "target/",
@@ -937,7 +937,7 @@ object Commands {
       val targetPackage = Option(str).filter(_.nonEmpty) orElse packageName
       if (targetPackage.isEmpty)
         PluginFail("Usage: adb-kill [<package-name>]")
-      state.log.info("Attempting to kill: " + targetPackage.get)
+      AndroidLog.info(state.log, "Attempting to kill: " + targetPackage.get)
       targetDevice(sdk, state.log) map { d =>
         val api = deviceApiLevel(d)
 
@@ -1094,7 +1094,7 @@ object Commands {
           val f = java.net.URLEncoder.encode(l, "utf-8")
           val license = SdkLayout.sdkLicenses / f
           val lines = IO.readLines(license)
-          state.log.info(s"Showing '$l' @ ${license.getCanonicalPath}")
+          AndroidLog.info(state.log, s"Showing '$l' @ ${license.getCanonicalPath}")
           lines foreach { line =>
             println(wrapLine(line, 70))
           }

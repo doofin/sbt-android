@@ -173,7 +173,7 @@ object Dex {
         )
         val result = shardPath * "*.dex" get
 
-        s.log.info(
+        AndroidLog.info(s.log,
           s"$sn: Generated dex shard, method count: " + (result map (dexMethodCount(
             _,
             s.log
@@ -220,7 +220,7 @@ object Dex {
           )
           (bin * "*.dex" get) foreach (_.delete())
         }
-        s.log.info(s"dex.scala: Generating dex, multidex=${dexOptions.multi}")
+        AndroidLog.info(s.log, s"Generating DEX, multidex=${dexOptions.multi}")
         s.log.debug("Dex inputs: " + inputs)
 
         val tmp = s.cacheDirectory / "dex"
@@ -256,7 +256,7 @@ object Dex {
           dexOptionsWithMainParams(dexOptions),
           SbtProcessOutputHandler(s.log)
         )
-        s.log.info(
+        AndroidLog.info(s.log,
           "dex method count: " + ((bin * "*.dex" get) map (dexMethodCount(
             _,
             s.log
@@ -325,7 +325,7 @@ object Dex {
             if (i.getName == "classes.jar")
               s"${i.getParentFile.getName}/${i.getName}"
             else i.getName
-          s.log.info("Pre-dexing: " + jname)
+          AndroidLog.info(s.log, "Pre-dexing: " + jname)
           bldr.preDexLibraryNoCache(
             i,
             out,
@@ -334,7 +334,7 @@ object Dex {
             SbtProcessOutputHandler(s.log)
           )
           if ((out * "*.dex" get).isEmpty)
-            s.log.info(s"${i.getName} does not contain classes to dex")
+            AndroidLog.info(s.log, s"${i.getName} does not contain classes to dex")
         }
         (i, out)
       }).toList: Seq[(File, File)]
@@ -372,7 +372,8 @@ object Dex {
             proguardRules,
             proguardClasspath,
             bt,
-            layout.maindexRootsJar
+            layout.maindexRootsJar,
+            s.log
           )
           val mainClasses =
             if (minimizeMain)
@@ -413,7 +414,8 @@ object Dex {
       proguardRules: Seq[String],
       proguardClasspath: Def.Classpath,
       buildTools: BuildToolInfo,
-      output: File
+      output: File,
+      log: Logger
   ): Unit = {
     val shrunk1 = buildTools.getLocation / "lib" / "shrinkedAndroid.jar"
     val shrinkedAndroid = if (!shrunk1.isFile) {
@@ -452,7 +454,7 @@ object Dex {
           }
       }
     }
-    Proguard.runProguard(proguardClasspath, baseConfig ++ rootsCfg)
+    Proguard.runProguard(proguardClasspath, baseConfig ++ rootsCfg, log)
   }
 
   // copied and adapted from AndroidBuilder.createMainDexList
@@ -515,7 +517,7 @@ object Dex {
         val methodIds = header.getInt
         methodIds
       } else {
-        log.info(dexFile.getName + " is not a valid dex file")
+        AndroidLog.info(log, dexFile.getName + " is not a valid dex file")
         0
       }
     }

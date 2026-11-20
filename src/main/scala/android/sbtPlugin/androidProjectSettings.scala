@@ -316,7 +316,7 @@ trait AndroidProjectSettings extends AutoPlugin with ProjectExtra {
           FilesInfo.exists
         ) { in =>
           if (in.nonEmpty) {
-            s.log.info("Rebuilding all classes because R.java has changed")
+            AndroidLog.info(s.log, "Rebuilding all classes because R.java has changed")
             IO.delete(d)
           }
           in

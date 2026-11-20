@@ -176,7 +176,8 @@ object Packaging {
       s
     )
     s.log.debug("Including predexed: " + predexed)
-    s.log.success(
+    AndroidLog.success(
+      s.log,
       "packaging.scala: Packaged: %s (%s)" format (output.getName, sizeString(
         output.length
       ))

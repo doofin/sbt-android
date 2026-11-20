@@ -193,7 +193,7 @@ object Resources {
       FilesInfo.lastModified,
       FilesInfo.exists
     ) { (inChanges, outChanges) =>
-      s.log.info("Collecting resources")
+      AndroidLog.info(s.log, "Collecting resources")
 
       incrResourceMerge(
         layout,
@@ -401,7 +401,7 @@ object Resources {
       slog: Logger
   )(implicit m: BuildOutput.Converter) {
 
-    slog.info("Performing full resource merge")
+    AndroidLog.info(slog, "Performing full resource merge")
     val merger = new ResourceMerger(minSdk)
 
     resTarget.mkdirs()
@@ -614,7 +614,7 @@ object Resources {
           FilesInfo.hash
         ) { in =>
           if (in.nonEmpty) {
-            s.log.info("Regenerating TR.scala because R.java has changed")
+            AndroidLog.info(s.log, "Regenerating TR.scala because R.java has changed")
             val layouts = (r ** "layout*" ** "*.xml").get ++
               (for {
                 lib <- l filterNot {

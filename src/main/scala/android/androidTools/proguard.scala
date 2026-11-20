@@ -1,6 +1,12 @@
 package android
 
-import java.io.{File, FileInputStream, FileOutputStream}
+import java.io.{
+  ByteArrayOutputStream,
+  File,
+  FileInputStream,
+  FileOutputStream,
+  PrintStream
+}
 import java.lang.reflect.{Constructor, Method}
 import java.util.jar.{JarInputStream, JarOutputStream}
 
@@ -26,7 +32,7 @@ object ProguardUtil {
       rules: Seq[String],
       log: Logger
   ): Unit = {
-    log.info("Creating proguard cache: " + outJar.getName)
+    AndroidLog.info(log, "Creating proguard cache: " + outJar.getName)
     // not going to use 'Using' here because it's so ugly!
     val jin = new JarInputStream(new FileInputStream(proguardJar))
     val jout = new JarOutputStream(new FileOutputStream(outJar))
@@ -79,6 +85,8 @@ object ProguardUtil {
 object Proguard {
   import ProguardUtil._
 
+  private val outputCaptureLock = new AnyRef
+
   def proguardInputs(
       u: Boolean,
       pgOptions: Seq[String],
@@ -121,7 +129,7 @@ object Proguard {
           ))
         )
 
-        st.log.info("proguard.scala : Finding dependency ...")
+        AndroidLog.info(st.log, "Finding ProGuard dependencies...")
 
         indeps
           .zip(filtered)
@@ -185,7 +193,7 @@ object Proguard {
     val re = ra.enable
 
     if (inputs.proguardCache exists (_.exists)) {
-      s.log.info("[debug] cache hit, skipping proguard!")
+      AndroidLog.info(s.log, "ProGuard cache hit; skipping ProGuard")
       None
     } else if ((p && !debug && !l) || ((d && debug) && !l)) {
       val libjars = inputs.libraryjars
@@ -217,9 +225,9 @@ object Proguard {
       ) {
         cfg foreach (l => s.log.debug(l))
         IO.write(s.cacheDirectory / "proguard-rules.hash", rulesHash)
-        runProguard(cp, cfg)
+        runProguard(cp, cfg, s.log)
       } else {
-        s.log.info(t.getName + " is up-to-date")
+        AndroidLog.info(s.log, t.getName + " is up-to-date")
       }
       inputs.proguardCache foreach {
         ProguardUtil.createCacheJar(t, _, pc, s.log)
@@ -258,7 +266,11 @@ object Proguard {
       ProguardMirror.fromClasspath
     )
 
-  def runProguard(classpath: Def.Classpath, cfg: Seq[String]): Unit = {
+  def runProguard(
+      classpath: Def.Classpath,
+      cfg: Seq[String],
+      log: Logger
+  ): Unit = {
     import language.reflectiveCalls
     val mirror = proguardMemo(classpath)
     type ProG = {
@@ -271,6 +283,72 @@ object Proguard {
       cpCtor.newInstance(cfg.toArray[String], new java.util.Properties)
     cpMethod.invoke(cparser, pgcfg)
     val pg = pgCtor.newInstance(pgcfg).asInstanceOf[ProG]
-    pg.execute()
+    outputCaptureLock.synchronized {
+      val originalOut = System.out
+      val capturedBytes = new ByteArrayOutputStream
+      val capturedOut = new PrintStream(capturedBytes, true, "UTF-8")
+      var executionFailure = Option.empty[Throwable]
+      try {
+        System.setOut(capturedOut)
+        pg.execute()
+      } catch {
+        case error: Throwable => executionFailure = Some(error)
+      } finally {
+        System.setOut(originalOut)
+        capturedOut.close()
+      }
+
+      val lines = new String(capturedBytes.toByteArray, "UTF-8")
+        .split("\\r?\\n")
+      val summary = ProguardOutputSummary.summarize(lines.toSeq)
+      summary.fileMessages.foreach(message => AndroidLog.info(log, message))
+      lines.filterNot(ProguardOutputSummary.isFileDetail).foreach(originalOut.println)
+      executionFailure.foreach(throw _)
+    }
+  }
+}
+
+private[android] object ProguardOutputSummary {
+  private val filePrefixes = Seq(
+    "Reading program jar [",
+    "Reading library jar [",
+    "Copying resources from program jar [",
+    "Preparing output jar ["
+  )
+  private val maxNames = 8
+
+  private[android] case class Summary(fileMessages: Seq[String])
+
+  def isFileDetail(line: String): Boolean = entry(line).isDefined
+
+  def summarize(lines: Seq[String]): Summary = {
+    val names = lines.flatMap(line => entry(line)).distinct
+    if (names.isEmpty) Summary(Nil)
+    else {
+      val shown = names.take(maxNames)
+      val remaining = names.size - shown.size
+      val suffix = if (remaining > 0) s", +$remaining more" else ""
+      Summary(Seq(s"ProGuard files: ${shown.mkString(", ")}$suffix"))
+    }
+  }
+
+  private def entry(line: String): Option[String] =
+    filePrefixes.iterator
+      .flatMap(prefix => entry(line, prefix))
+      .take(1)
+      .toList
+      .headOption
+
+  private def entry(line: String, prefix: String): Option[String] = {
+    val trimmed = line.trim
+    if (!trimmed.startsWith(prefix)) None
+    else {
+      val start = prefix.length
+      val end = trimmed.indexOf(']', start)
+      if (end < 0) None
+      else
+        Option(new File(trimmed.substring(start, end)).getName)
+          .filter(_.nonEmpty)
+    }
   }
 }

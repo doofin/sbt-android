@@ -37,7 +37,7 @@ object VariantSettings {
 
   def clearVariant(s: State): State = {
     val session = Project.extract(s).session
-    s.log.info("Clearing variant configuration from " + session.current.project)
+    AndroidLog.info(s.log, "Clearing variant configuration from " + session.current.project)
     withVariant(s)(variants =>
       reapply(
         session,
@@ -52,14 +52,14 @@ object VariantSettings {
   }
   def clearAllVariants(s: State): State = {
     val session = Project.extract(s).session
-    s.log.info("Clearing variant configuration from all projects")
+    AndroidLog.info(s.log, "Clearing variant configuration from all projects")
     withVariant(s)(variants =>
       reapply(session, variants.clearExtraSettings, Project.structure(s), s)
     )
   }
   def clearVariant(s: State, ref: ProjectRef): State = {
     val session = Project.extract(s).session
-    s.log.info("Clearing variant configuration from " + ref.project)
+    AndroidLog.info(s.log, "Clearing variant configuration from " + ref.project)
     withVariant(s)(variants =>
       reapply(
         session,
@@ -124,7 +124,7 @@ object VariantSettings {
       )
       val bt = buildType.getOrElse("(none)")
       val fl = flavor.getOrElse("(none)")
-      s.log.info(
+      AndroidLog.info(s.log,
         s"Applying variant settings buildType=$bt flavor=$fl to ${project.project}..."
       )
       reapply(extracted.session, newVariant, extracted.structure, s)
@@ -177,17 +177,17 @@ object VariantSettings {
       val flavors = extracted.get(Keys.flavors in project)
       val bts = bt.getOrElse("(none)")
       val fs = f.getOrElse("(none)")
-      s.log.info(s"${project.project}: buildType=$bts flavor=$fs")
+      AndroidLog.info(s.log, s"${project.project}: buildType=$bts flavor=$fs")
       val abt =
         if (buildTypes.isEmpty) "  (none)"
         else buildTypes.keys map ("  " + _) mkString "\n"
       val af =
         if (flavors.isEmpty) "  (none)"
         else flavors.keys map ("  " + _) mkString "\n"
-      s.log.info("Available buildTypes:")
-      s.log.info(abt)
-      s.log.info("Available flavors:")
-      s.log.info(af)
+      AndroidLog.info(s.log, "Available buildTypes:")
+      AndroidLog.info(s.log, abt)
+      AndroidLog.info(s.log, "Available flavors:")
+      AndroidLog.info(s.log, af)
       s
   }
   def append(s: State, ss: Seq[Setting[_]]): State = {

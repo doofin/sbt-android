@@ -407,11 +407,9 @@ object SdkInstaller extends TaskBase {
           }
           .mkString(",")
 
-        log.success(
+        log.debug(
           "Android SDK updates available, run 'android-update' to update:" + updatesV
         )
-        
-
       }
     }
     ()

@@ -4,7 +4,9 @@ This summarizes the source reorganization performed before the planned sbt migra
 - [new structure proposal](new-project-structure.md) for the full file mapping and 
 - [the migration plan](migri.md) for the sbt upgrade.
 
-Don't delete the instructions!
+principles:
+- Don't delete the instructions!
+- keep the results of each round brief, don't be verbose.
 
 ## 1st round
 
@@ -35,19 +37,14 @@ instructions:
 - improve the cli printing and logging so users experience better when using the plugin
 
 
-### Findings
-
-- **Current organization:** the project now uses `src/main/scala` and `src/main/resources`, with source folders `android/coreLogic`, `android/androidTools`, `android/sbtPlugin`, plus `android/misc`. These are still one Scala package/project in practice: folder placement does not enforce package or dependency boundaries. The test tree has MUnit suites, while consumer-level tests remain in `sbt-test/`.
-- **Structure documentation:** `docs/project-structure.md` has been synchronized with the current source, resource, and test roots, responsibility folders, MUnit suites, and remaining SBT/Android coupling. Keep it updated as boundaries change.
-- **CLI device listing:** `android devices` previously wrapped whole-row rendering in a `Try`, so an unavailable battery reading or another device-property failure silently removed that device from the output. Row formatting now lives in `DeviceListFormatter`; missing battery/version/API values receive visible placeholders, selected-device marking is kept, and a row remains visible when an individual property cannot be read. Added two SDK/device-independent MUnit tests. Java 8 `test` now passes all 12 tests.
-- **SDK warning output:** repeated Android repository schema warnings now collapse to one concise summary by default, while actionable SDK warnings remain visible. Set `verboseSdkWarnings in Android := true` to see full schema-warning text and namespace mappings. Added MUnit coverage for summary-once, visible actionable warnings, and verbose output; Java 8 `test` passes all 17 tests.
+results of 3rd round:
+- **CLI device listing:** `android devices` previously wrapped whole-row rendering in a `Try`, so an unavailable battery reading or another device-property failure silently removed that device from the output. Row formatting now lives in `DeviceListFormatter`; - **SDK warning output:** repeated Android repository schema warnings now collapse to one concise summary by default, while actionable SDK warnings remain visible. Set `verboseSdkWarnings in Android := true` to see full schema-warning text and namespace mappings. Added MUnit coverage for summary-once, visible actionable warnings, and verbose output; Java 8 `test` passes all 17 tests.
 - **Retained scanner copies:** the production scanners are under `coreLogic`; three older copies in `android/misc` are referenced by `BytecodeScannerSuite` as parity oracles. Keep them only while useful for regression comparison, then move them to test sources or remove them; `misc` is not a meaningful long-term name and compiling old copies into the plugin artifact is unnecessary.
-- **Keep central contracts distinct:** do not merge `keys.scala` into settings or task implementations. It is the plugin's key registry/public configuration surface. Keep plugin entry points, DSL/macro code, and key definitions discoverable and stable during the sbt upgrade.
-- **Potential small cohesion groupings:** `compat.scala` and `sbtInternals.scala` are both SBT-internal compatibility shims and could be documented or grouped together, but combining files is low priority and must preserve the special `sbt` package names. `commands.scala` and `parsers.scala` are related by command behavior, but the parser object also performs state/task/SDK lookups; consolidate only if that reduces coupling rather than merely reducing file count.
+- **Keep central contracts distinct:** do not merge `keys.scala` into settings or task implementations. It is the plugin's key registry/public configuration surface. **Potential small cohesion groupings:** `compat.scala` and `sbtInternals.scala` are both SBT-internal compatibility shims and could be documented or grouped together, but combining files is low priority and must preserve the special `sbt` package names. `commands.scala` and `parsers.scala` are related by command behavior, but the parser object also performs state/task/SDK lookups; consolidate only if that reduces coupling rather than merely reducing file count.
 - **High-value splits:** `tasks.scala` is a large SBT task-orchestration object spanning resources, manifest, native builds, DEX/ProGuard, packaging, and device tests. Extract cohesive task-definition groups incrementally, preserving task keys and behavior. `commands.scala` similarly combines ADB/device/file operations, logcat, project generation, SDK management, and variants; separate these only along tested behavior seams.
 - **Boundary debt:** files in `androidTools` still directly use SBT types/utilities for streams, logging, caching, and file handling. Keep their Android-domain operations grouped, but move SBT adapters to `sbtPlugin` only when there is a stable interface and tests; do not treat current directory placement as completed modularization.
-- **Naming:** Scala source and test filenames now consistently use lower camelCase (for example, `packaging.scala`, `proguard.scala`, and `signAndroidJar.scala`). Scala declarations and package names are unchanged; `sample.scala` remains the Android project template. Prefer descriptive names over `misc`; avoid package renames because most existing API remains in package `android`.
 
-### Outcome and next actions
-
-No broad task/command orchestration files were merged or split in this analysis round; bounded manifest XML, device-row formatting, and SDK warning reporting now provide additional MUnit-testable seams. Device rows remain visible when optional properties are unavailable, and noisy SDK schema warnings are concise by default with an opt-in verbose setting. Recommended next actions: retain scanner reference copies only until parity tests are trusted, then move/remove them; split the task/command monoliths in small behavior-preserving steps; address SBT adapters as a distinct boundary-refactoring effort. Keep public plugin entry points, key names/types, DSL, artifact coordinates, and Scripted fixtures stable. The planned SBT launcher migration itself has not been attempted in this round.
+## 4th round
+instructions:
+- Review the current codebase again, and new sbt docs https://www.scala-sbt.org/1.x/docs/. find out possible refactoring that will help the migration to sbt 1.13, like removing deprecated APIs, further modularizing the code, splitting sbt independent code from sbt dependent code,etc
+- think about a middle abstraction layer that this project uses, so we can easily plug in different sbt versions, or even different build tools in the future. just show several potential approaches, don't implement them yet. 

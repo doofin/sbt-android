@@ -75,12 +75,12 @@ case object AndroidGlobalPlugin extends AutoPlugin {
         e.runTask(antLayoutDetector in ref, s)._1
       }
 
-      s.log.success("AndroidGlobalPlugin: sbt android load finished")
+      AndroidLog.success(s.log, "AndroidGlobalPlugin: sbt android load finished")
 
       if (addDeps.flatMap(_._2).nonEmpty) {
-        s.log.info(s"Adding android subproject dependency rules for: ${addDeps
+        AndroidLog.info(s.log, s"Adding android subproject dependency rules for: ${addDeps
             .collect { case (p, ds) if ds.nonEmpty => p.project }
-            .mkString(", ")}")
+          .mkString(", ")}")
         VariantSettings.append(end, addDeps.flatMap(_._2))
       } else end
 

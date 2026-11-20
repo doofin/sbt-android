@@ -222,7 +222,7 @@ object Tasks extends TaskBase {
       val mfile = Dependencies.moduleIdFile(dest)
       val mline = s"${m.organization}:${m.name}:${m.revision}"
       IO.writeLines(mfile, mline :: Nil)
-      log.info("Unpacking aar: %s to %s" format (aar.getName, dest.getName))
+      AndroidLog.info(log, "Unpacking aar: %s to %s" format (aar.getName, dest.getName))
       dest.mkdirs()
       val files = IO.unzip(aar, dest)
       IO.writeLines(am, files.filter(_.isFile).toList.map(_.getAbsolutePath))
@@ -245,7 +245,7 @@ object Tasks extends TaskBase {
 
     implicit val output = o
     prjs collect { case a: AutoLibraryProject => a } flatMap { lib =>
-      s.log.info("Processing library project: " + lib.pkg)
+      AndroidLog.info(s.log, "Processing library project: " + lib.pkg)
 
       lib.getProguardRules.getParentFile.mkdirs
       // TODO collect resources from apklibs and aars
@@ -308,7 +308,7 @@ object Tasks extends TaskBase {
         val d = dest / (m.organization + "-" + m.name + "-" + m.revision)
         val lib = ApkLibrary(d)
         if (d.lastModified < l.lastModified || !lib.getManifest.exists) {
-          s.log.info("Unpacking apklib: " + m)
+          AndroidLog.info(s.log, "Unpacking apklib: " + m)
           d.mkdirs()
           IO.unzip(l, d)
 
@@ -483,7 +483,7 @@ object Tasks extends TaskBase {
           "SBT_SOURCE_MANAGED" -> srcs.getAbsolutePath
         ) ++ envs
 
-        log.info("Executing NDK build")
+        AndroidLog.info(log, "Executing NDK build")
         val ndkbuildFile =
           if (!Commands.isWindows) file(ndk) / "ndk-build"
           else {
@@ -689,7 +689,7 @@ object Tasks extends TaskBase {
   val packageApklibTaskDef = Def.task {
     implicit val output: Converter = outputLayout.value
     val outfile = projectLayout.value.outputApklibFile(name.value)
-    streams.value.log.info("Packaging " + outfile.getName)
+    AndroidLog.info(streams.value.log, "Packaging " + outfile.getName)
     val mapping = (mappings in packageApklib).value
     IO.jar(mapping, outfile, new java.util.jar.Manifest)
     outfile
@@ -721,7 +721,7 @@ object Tasks extends TaskBase {
     implicit val output: Converter = outputLayout.value
     val outfile = projectLayout.value.outputAarFile(name.value)
     val mapping = (mappings in packageAar).value
-    streams.value.log.info("Packaging " + outfile.getName)
+    AndroidLog.info(streams.value.log, "Packaging " + outfile.getName)
 
     IO.jar(mapping, outfile, new java.util.jar.Manifest)
     outfile
@@ -750,7 +750,7 @@ object Tasks extends TaskBase {
       layout.proguardTxt.getAbsolutePath
       layout.proguardTxt.getParentFile.mkdirs()
 
-      s.log.info("Packaging resources: " + p.getName)
+      AndroidLog.info(s.log, "Packaging resources: " + p.getName)
       Resources.aapt(
         agg.builder(s.log),
         manif,
@@ -854,7 +854,7 @@ object Tasks extends TaskBase {
     implicit val output: Converter = o
 
     val fR = if (d()) {
-      s.log.success("Debug package does not need signing: " + a.getName)
+      AndroidLog.success(s.log, "Debug package does not need signing: " + a.getName)
       a
     } else {
       c map { cfg =>
@@ -877,15 +877,15 @@ object Tasks extends TaskBase {
           ))).!
         }
 
-        s.log.success("Signed: " + signedApkFile.getName)
+        AndroidLog.success(s.log, "Signed: " + signedApkFile.getName)
         signedApkFile
       } getOrElse {
-        s.log.success("Package needs signing: " + a.getName)
+        AndroidLog.success(s.log, "Package needs signing: " + a.getName)
         a
       }
     }
 
-    s.log.success("apk : \n" + a.getPath())
+    AndroidLog.success(s.log, "apk : \n" + a.getPath())
     fR
   }
 
@@ -915,7 +915,7 @@ object Tasks extends TaskBase {
           PluginFail("zipalign failed")
         }
 
-        s.log.info("zipaligned: " + aligned.getName)
+        AndroidLog.info(s.log, "zipaligned: " + aligned.getName)
         a.getParentFile.mkdirs()
         IO.copyFile(aligned, a)
       } else {
@@ -1149,7 +1149,7 @@ object Tasks extends TaskBase {
       normalres(layout, extrares, libs),
       genres(layout, libs)
     ) {
-      s.log.info("Processing resources")
+      AndroidLog.info(s.log, "Processing resources")
       if (!res.exists)
         s.log.warn("No resources found at " + res.getAbsolutePath)
       Resources.aapt(
@@ -1442,8 +1442,8 @@ object Tasks extends TaskBase {
         val before = resApk.length
         val after = shrunkResApk.length
         val pct = (before - after) * 100 / before
-        log.info(s"Resource Shrinker: $unused unused resources")
-        log.info(s"Resource Shrinker: data reduced from ${Packaging
+        AndroidLog.info(log, s"Resource Shrinker: $unused unused resources")
+        AndroidLog.info(log, s"Resource Shrinker: data reduced from ${Packaging
             .sizeString(before)} to ${Packaging.sizeString(after)}, removed $pct%")
       }
       shrunkResApk
@@ -1486,11 +1486,11 @@ object Tasks extends TaskBase {
 
     type TestMetrics = java.util.Map[String, String]
     override def testRunStarted(name: String, count: Int) {
-      log.info("testing %s (tests: %d)" format (name, count))
+      AndroidLog.info(log, "testing %s (tests: %d)" format (name, count))
     }
 
     override def testStarted(id: TestIdentifier) {
-      log.info(s" - %s (%s)" format (id.getTestName, id.getClassName))
+      AndroidLog.info(log, s" - %s (%s)" format (id.getTestName, id.getClassName))
     }
 
     override def testEnded(id: TestIdentifier, metrics: TestMetrics) {
@@ -1508,11 +1508,11 @@ object Tasks extends TaskBase {
     }
 
     override def testRunStopped(elapsed: Long) {
-      log.info("test run stopped (%dms)" format elapsed)
+      AndroidLog.info(log, "test run stopped (%dms)" format elapsed)
     }
 
     override def testRunEnded(elapsed: Long, metrics: TestMetrics) {
-      log.info("test run finished (%dms)" format elapsed)
+      AndroidLog.info(log, "test run finished (%dms)" format elapsed)
       log.debug("run end metrics: " + metrics)
     }
 
@@ -1826,7 +1826,7 @@ object Tasks extends TaskBase {
       val receiver = new Commands.ShellLogging(l => p.processNewLines(Array(l)))
       val selection = testSelection map { "-e " + _ } getOrElse ""
       val command = "am instrument -r -w %s %s" format (selection, intent)
-      s.log.info(
+      AndroidLog.info(s.log,
         s"Testing on ${d.getProperty(IDevice.PROP_DEVICE_MODEL)} (${d.getSerialNumber})..."
       )
       s.log.debug("Executing [%s]" format command)
@@ -1856,7 +1856,7 @@ object Tasks extends TaskBase {
       val receiver = new Commands.ShellLogging(l => s.log.info(l))
       val pkg = applicationId.value
       val command = "pm clear %s" format pkg
-      s.log.info(s"Clearing data for $pkg on ${d
+      AndroidLog.info(s.log, s"Clearing data for $pkg on ${d
           .getProperty(IDevice.PROP_DEVICE_MODEL)} (${d.getSerialNumber})...")
       s.log.debug("Executing [%s]" format command)
       d.executeShellCommand(command, receiver)
@@ -1898,7 +1898,7 @@ object Tasks extends TaskBase {
           val command =
             "am start %s -n %s" format (if (debug) "-D" else "", intent)
           def execute(d: IDevice): Unit = {
-            s.log.info(
+            AndroidLog.info(s.log,
               s"Running on ${d.getProperty(IDevice.PROP_DEVICE_MODEL)} (${d.getSerialNumber})..."
             )
             s.log.debug("Executing [%s]" format command)
@@ -1934,7 +1934,7 @@ object Tasks extends TaskBase {
           "install-" + URLEncoder.encode(d.getSerialNumber, "utf-8")
         FileFunction.cached(s.cacheDirectory / cacheName, FilesInfo.hash) {
           in =>
-            s.log.info(
+            AndroidLog.info(s.log,
               s"Installing to ${d.getProperty(IDevice.PROP_DEVICE_MODEL)} (${d.getSerialNumber})..."
             )
             installPackage(p, timeo, k, d, s.log)
@@ -1982,7 +1982,7 @@ object Tasks extends TaskBase {
     val secs = (end - start) / 1000d
     val rate = size / KB / secs
     val mrate = if (rate > MB) rate / MB else rate
-    log.info(
+    AndroidLog.info(log,
       "%s %s in %.2fs. %.2f%s/s" format (msg, Packaging.sizeString(
         size
       ), secs, mrate,
@@ -2005,13 +2005,13 @@ object Tasks extends TaskBase {
         Set.empty
       }(Set.empty)
     }
-    log.info(
+    AndroidLog.info(log,
       s"Uninstalling from ${device.getProperty(IDevice.PROP_DEVICE_MODEL)} (${device.getSerialNumber})..."
     )
     Option(device.uninstallPackage(packageName)) map { err =>
       PluginFail("[%s] Uninstall failed: %s" format (packageName, err))
     } getOrElse {
-      log.info("[%s] Uninstall finished" format packageName)
+      AndroidLog.info(log, "[%s] Uninstall finished" format packageName)
     }
   }
   val uninstallTaskDef = Def.task {

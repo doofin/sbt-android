@@ -129,7 +129,7 @@ object AndroidLint {
             case Severity.FATAL         => s.log.error(_: String)
             case Severity.ERROR         => s.log.error(_: String)
             case Severity.WARNING       => s.log.warn(_: String)
-            case Severity.INFORMATIONAL => s.log.info(_: String)
+            case Severity.INFORMATIONAL => message => AndroidLog.info(s.log, message)
             case Severity.IGNORE        => s.log.debug(_: String)
           }
           if (!previous.exists(_ == issue.issue)) {
