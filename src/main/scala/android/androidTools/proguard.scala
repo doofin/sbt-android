@@ -1,5 +1,7 @@
 package android
 
+import textRes.Proguard._
+
 import java.io.{
   ByteArrayOutputStream,
   File,
@@ -311,20 +313,7 @@ object Proguard {
   }
 }
 
-private[android] object ProguardOutputSummary {
-  private val filePrefixes = Seq(
-    "Reading program jar [",
-    "Reading library jar [",
-    "Copying resources from program jar [",
-    "Preparing output jar ["
-  )
-  private val maxNames = 8
-  private val licenseNoticePrefixes = Seq(
-    "ProGuard is released under the GNU General Public License",
-    "must ensure that programs that link to it",
-    "carry the GNU General Public License as well",
-    "apply for an exception with the author of ProGuard"
-  )
+object ProguardOutputSummary {
 
   private[android] case class Summary(fileMessages: Seq[String])
 

@@ -1,11 +1,10 @@
 name := "sbt-android"
 organization := "org.scala-android"
-
-val pluginVersion = "2.0.5-SNAPSHOT"
-val gradleBuildVersion = pluginVersion
-
 scalaVersion := "2.12.19"
 
+val pluginVersion = "2.0.5-SNAPSHOT"
+version := pluginVersion
+val gradleBuildVersion = pluginVersion
 val androidToolsVersion = "2.3.0"
 val gradleToolingApi = "2.6"
 
@@ -13,14 +12,8 @@ resolvers ++= Seq(
   "Google's Maven repository" at "https://dl.google.com/dl/android/maven2/"
 )
 
-version := pluginVersion
-
 val javaV = "1.8"
-
-val mjavacOptions: Seq[String] = Seq("-release", "8")
-// javacOptions ++= "-source" :: javaV :: "-target" :: javaV :: "-release" :: "8" :: Nil
-javacOptions ++= mjavacOptions
-
+javacOptions ++= Seq("-release", "8")
 scalacOptions ++= Seq("-deprecation", "-Xlint", "-feature") ++ mjavacOptions
 
 unmanagedBase := baseDirectory(_ / "libs").value
@@ -30,21 +23,17 @@ resourceDirectory in Compile := baseDirectory(
 ).value
 
 aggregate := false
-
 sbtPlugin := true
-
 enablePlugins(BuildInfoPlugin, SbtPlugin)
 
 // build info plugin
 
 buildInfoKeys := Seq(name, version, scalaVersion, sbtVersion)
-
 buildInfoPackage := "android"
 
 // bintray
 
 bintrayRepository in bintray := "sbt-plugins"
-
 publishMavenStyle := false
 
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
@@ -61,11 +50,10 @@ libraryDependencies ++= Seq(
   "com.android.tools.build" % "gradle-core" % androidToolsVersion excludeAll
     ExclusionRule(organization = "net.sf.proguard"),
   "com.android.tools.lint" % "lint" % "25.3.0",
-//  "com.android.tools.external.com-intellij" % "uast" % "145.597.4", // because google didn't sync the correct version...
   "io.argonaut" %% "argonaut" % "6.2.3",
   "net.orfjackal.retrolambda" % "retrolambda" % "2.5.3",
   "org.scalaz" %% "scalaz-core" % "7.2.20",
-  "org.scalameta" %% "munit" % "0.7.29" % Test
+  "org.scalameta" %% "munit" % "1.0.4" % Test
 )
 
 testFrameworks += new TestFramework("munit.Framework")
@@ -77,9 +65,6 @@ scriptedLaunchOpts ++= Seq(
 )
 
 sbtTestDirectory := baseDirectory(_ / "sbt-test").value
-
-// TODO reorganize tests better, ditch android-sdk-plugin prefix
-// group by test config type
 
 // TODO these scriptedDependencies blocks can be removed since sbt scripted uses the current
 //  sbt version in scripted tests and you can use `sys.props("plugin.version")` to fetch
@@ -120,3 +105,5 @@ pomExtra :=
         <url>https://github.com/pfn</url>
       </developer>
     </developers>
+</ developer >
+</ developers >
