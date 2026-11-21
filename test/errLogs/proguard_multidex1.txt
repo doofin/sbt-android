@@ -1,0 +1,51 @@
+
+[sbt-android] Creating proguard cache: proguard-cache-32caf4ee3205700fb0452eb25d44d1802e024351.jar
+[sbt-android] Generating DEX, multidex=true
+[error] --minimal-main-dex is only supported in combination with --multi-dex and --main-dex-list
+[error] usage:
+[error]   dx --dex [--debug] [--verbose] [--positions=<style>] [--no-locals]
+[error]   [--no-optimize] [--statistics] [--[no-]optimize-list=<file>] [--no-strict]
+[error]   [--keep-classes] [--output=<file>] [--dump-to=<file>] [--dump-width=<n>]
+[error]   [--dump-method=<name>[*]] [--verbose-dump] [--no-files] [--core-library]
+[error]   [--num-threads=<n>] [--incremental] [--force-jumbo] [--no-warning]
+[error]   [--multi-dex [--main-dex-list=<file> [--minimal-main-dex]]
+[error]   [--input-list=<file>] [--min-sdk-version=<n>]
+[error]   [--allow-all-interface-method-invokes]
+[error]   [<file>.class | <file>.{zip,jar,apk} | <directory>] ...
+[error]     Convert a set of classfiles into a dex file, optionally embedded in a
+[error]     jar/zip. Output name must end with one of: .dex .jar .zip .apk or be a
+[error]     directory.
+[error]     Positions options: none, important, lines.
+[error]     --multi-dex: allows to generate several dex files if needed. This option is
+[error]     exclusive with --incremental, causes --num-threads to be ignored and only
+[error]     supports folder or archive output.
+[error]     --main-dex-list=<file>: <file> is a list of class file names, classes
+[error]     defined by those class files are put in classes.dex.
+[error]     --minimal-main-dex: only classes selected by --main-dex-list are to be put
+[error]     in the main dex.
+[error]     --input-list: <file> is a list of inputs.
+[error]     Each line in <file> must end with one of: .class .jar .zip .apk or be a
+[error]     directory.
+[error]     --min-sdk-version=<n>: Enable dex file features that require at least sdk
+[error]     version <n>.
+[error]   dx --annotool --annotation=<class> [--element=<element types>]
+[error]   [--print=<print types>]
+[error]   dx --dump [--debug] [--strict] [--bytes] [--optimize]
+[error]   [--basic-blocks | --rop-blocks | --ssa-blocks | --dot] [--ssa-step=<step>]
+[error]   [--width=<n>] [<file>.class | <file>.txt] ...
+[error]     Dump classfiles, or transformations thereof, in a human-oriented format.
+[error]   dx --find-usages <file.dex> <declaring type> <member>
+[error]     Find references and declarations to a field or method.
+[error]     <declaring type> is a class name in internal form, like Ljava/lang/Object;
+[error]     <member> is a field or method name, like hashCode.
+[error]   dx -J<option> ... <arguments, in one of the above forms>
+[error]     Pass VM-specific options to the virtual machine that runs dx.
+[error]   dx --version
+[error]     Print the version of this tool (1.16).
+[error]   dx --help
+[error]     Print this message.
+[error] stack trace is suppressed; run last Android / dex for the full output
+[error] (Android / dex) com.android.ide.common.process.ProcessException: java.util.concurrent.ExecutionException: com.android.ide.common.process.ProcessException: ForkOptions(None, Some(LoggedOutput(sbt.internal.util.ManagedLogger@20a8d3bd)), Vector(), None, Vector(-Xmx1024m, -cp, /home/tab73/.android/sbt/sdk/build-tools/29.0.1/lib/dx.jar), false, Map())
+[error] com.android.dx.command.Main --dex --num-threads=8 --multi-dex --minimal-main-dex --output /home/tab73/work/akkaVpn/target/android/intermediates/dex /home/tab73/work/akkaVpn/target/android/intermediates/proguard/classes.proguard.jar
+[error] Android SDK command failed (1); see prior messages for details
+[error]             

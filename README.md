@@ -29,6 +29,15 @@ dexMinimizeMain := true
 - **Benefit:** only selected startup classes are kept in the primary DEX, helping avoid main-dex capacity errors.
 - **Tradeoff:** a required startup dependency may be left in a secondary DEX. Test on devices below API 21 before shipping.
 
+If `dx` reports `--minimal-main-dex is only supported in combination with --multi-dex and --main-dex-list`, the minimal-main flag was passed without a main-dex list. This plugin generates that list for legacy multidex, but the flag can also be enabled when legacy mode is off. For native multidex (API 21 and above), leave `dexMinimizeMain` disabled and remove any `--minimal-main-dex` from `dexAdditionalParams`:
+
+```scala
+dexMulti := true
+dexMinimizeMain := false
+```
+
+The dex task is cached, so a warm cache can make this configuration error appear intermittent. After changing these settings, run `clean` and rebuild to force dexing to run again.
+
 ## This fork
 current version: 2.0.5-SNAPSHOT
 - sbt: 1.3.13

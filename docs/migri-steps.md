@@ -47,4 +47,15 @@ results of 3rd round:
 ## 4th round
 instructions:
 - Review the current codebase again, and new sbt docs https://www.scala-sbt.org/1.x/docs/. find out possible refactoring that will help the migration to sbt 1.13, like removing deprecated APIs, further modularizing the code, splitting sbt independent code from sbt dependent code,etc
-- think about a middle abstraction layer that this project uses, so we can easily plug in different sbt versions, or even different build tools in the future. just show several potential approaches, don't implement them yet. 
+- think about a middle abstraction layer that this project can invoke, so we can easily plug in different sbt versions, or even different build tools in the future(for example, a trait or abstract class as specs, and sbt is one of the impl). just show several potential approaches, don't implement them yet.
+
+### Abstraction options (proposal only)
+
+The current boundary is incomplete: [tasks.scala](../src/main/scala/android/sbtPlugin/tasks.scala) wires sbt tasks to Android operations, while [packaging.scala](../src/main/scala/android/androidTools/packaging.scala) still accepts sbt classpaths and task streams. Possible approaches:
+
+1. **Tool adapter + domain operations:** define build-tool-neutral inputs/results for individual operations; sbt translates its keys and classpaths, schedules the operations, and exposes the existing keys. Another tool can supply its own adapter. This is straightforward to test, but every adapter must implement its own task wiring and incremental behavior.
+2. **Small service ports:** domain operations use narrow interfaces for logging, process execution, or caching, with sbt and other tools supplying implementations. This can extract mixed code incrementally, but cache keys, invalidation, failures, and output ownership need explicit contracts; a large generic `BuildTool` interface would merely hide sbt coupling.
+3. **Portable execution protocol:** a build-tool adapter sends versioned operation requests to a separate CLI/process and receives results and diagnostics. This offers stronger runtime and language isolation, but adds process, serialization, versioning, and secret-handling overhead; the host still owns its task graph and caching.
+4. **sbt compatibility facade:** isolate sbt/Zinc-sensitive code such as [androidTestSettings.scala](../src/main/scala/android/sbtPlugin/androidTestSettings.scala) behind a small internal adapter, with separately compiled implementations only where compatibility requires them. This is the least disruptive sbt migration option, but by itself does not make Android operations usable by other build tools.
+
+Prefer combining 1 and 4 first, adding ports from 2 only where an operation needs them; consider 3 if a separate runtime becomes a real requirement. For example, translate sbt classpaths to neutral jar metadata before APK packaging, preserving provided-dependency filtering. Keep sbt task scheduling, public keys, and caching in the adapter; preserve incremental behavior and test with MUnit plus sbt Scripted/consumer builds. Separate published adapters may be needed for incompatible sbt/Scala binary lines; one adapter can serve compatible sbt versions, subject to verification. No approach has been implemented or compatibility verified in this round.
