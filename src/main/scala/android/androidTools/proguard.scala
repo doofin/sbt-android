@@ -302,7 +302,10 @@ object Proguard {
         .split("\\r?\\n")
       val summary = ProguardOutputSummary.summarize(lines.toSeq)
       summary.fileMessages.foreach(message => AndroidLog.info(log, message))
-      lines.filterNot(ProguardOutputSummary.isFileDetail).foreach(originalOut.println)
+      lines
+        .filterNot(ProguardOutputSummary.isFileDetail)
+        .filterNot(ProguardOutputSummary.isLicenseNotice)
+        .foreach(originalOut.println)
       executionFailure.foreach(throw _)
     }
   }
@@ -316,10 +319,19 @@ private[android] object ProguardOutputSummary {
     "Preparing output jar ["
   )
   private val maxNames = 8
+  private val licenseNoticePrefixes = Seq(
+    "ProGuard is released under the GNU General Public License",
+    "must ensure that programs that link to it",
+    "carry the GNU General Public License as well",
+    "apply for an exception with the author of ProGuard"
+  )
 
   private[android] case class Summary(fileMessages: Seq[String])
 
   def isFileDetail(line: String): Boolean = entry(line).isDefined
+
+  def isLicenseNotice(line: String): Boolean =
+    licenseNoticePrefixes.exists(line.trim.startsWith)
 
   def summarize(lines: Seq[String]): Summary = {
     val names = lines.flatMap(line => entry(line)).distinct

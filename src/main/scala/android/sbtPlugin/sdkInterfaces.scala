@@ -15,10 +15,12 @@ import collection.JavaConverters._
 private[android] object SdkProgressWarnings {
   val metadataSummary =
     "Android SDK metadata warnings were summarized; set verboseSdkWarnings in Android := true for details"
-  private val reportedSummaries = new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
+  private val reportedSummaries =
+    new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
   private val reportedMessages =
     new java.util.WeakHashMap[AnyRef, scala.collection.mutable.Set[String]]()
-  private val verboseByLogger = new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
+  private val verboseByLogger =
+    new java.util.WeakHashMap[AnyRef, java.lang.Boolean]()
   val consoleSummaryKey: AnyRef = new Object
 
   def configureVerbose(key: AnyRef, enabled: Boolean): Unit = synchronized {
@@ -29,12 +31,13 @@ private[android] object SdkProgressWarnings {
     Option(verboseByLogger.get(key)).exists(_.booleanValue())
   }
 
-  def reportSummaryOnce(key: AnyRef, emit: String => Unit): Unit = synchronized {
-    if (!reportedSummaries.containsKey(key)) {
-      reportedSummaries.put(key, java.lang.Boolean.TRUE)
-      emit(metadataSummary)
+  def reportSummaryOnce(key: AnyRef, emit: String => Unit): Unit =
+    synchronized {
+      if (!reportedSummaries.containsKey(key)) {
+        reportedSummaries.put(key, java.lang.Boolean.TRUE)
+        emit(metadataSummary)
+      }
     }
-  }
 
   def reportMessageOnce(
       key: AnyRef,
@@ -63,8 +66,8 @@ private[android] object SdkProgressWarnings {
 
 private[android] final class SdkWarningReporter(
     verbose: Boolean,
-  emit: String => Unit,
-  summaryKey: AnyRef = new Object
+    emit: String => Unit,
+    summaryKey: AnyRef = new Object
 ) {
   private def isVerbose: Boolean =
     verbose || SdkProgressWarnings.isVerbose(summaryKey)
@@ -94,8 +97,7 @@ private[android] final class SdkWarningReporter(
 case class SbtAndroidProgressIndicator(
     log: Logger,
     verboseSdkWarnings: Boolean = false
-)
-    extends ProgressIndicatorAdapter {
+) extends ProgressIndicatorAdapter {
   private[this] val warningReporter = new SdkWarningReporter(
     verboseSdkWarnings,
     message => log.warn(message),

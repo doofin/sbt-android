@@ -15,7 +15,6 @@ import com.android.tools.lint.detector.api.{
   Project => LintProject,
   Location,
   TextFormat,
-  Severity,
   Issue
 }
 
@@ -32,7 +31,7 @@ object AndroidLint {
       classes: File,
       flags: LintCliFlags,
       detectors: Seq[Issue],
-      strict: Boolean,
+      _strict: Boolean,
       minSdk: String,
       targetSdk: String,
       s: TaskStreams
@@ -41,7 +40,7 @@ object AndroidLint {
     val client =
       AndroidLint.SbtLintClient(layout, classes, flags, minSdk, targetSdk)
     flags.getReporters.clear()
-    flags.getReporters.add(SbtLintReporter(client, strict, s))
+    flags.getReporters.add(SbtLintReporter(client, s))
     client.run(
       AndroidLint.LintDetectorIssues(detectors),
       List(layout.base).asJava
@@ -101,12 +100,9 @@ object AndroidLint {
 
   case class SbtLintReporter(
       _client: LintCliClient,
-      strict: Boolean,
       s: TaskStreams
   ) extends Reporter(_client, null) {
     lazy val fmt = new MessageFormat("{0} {1}{0,choice,0#s|1#|1<s}")
-    def fmtE(n: Int): StringBuffer =
-      fmt.format(Array(n, "error"), new StringBuffer, null)
     def fmtW(n: Int): StringBuffer =
       fmt.format(Array(n, "warning"), new StringBuffer, null)
 
@@ -114,24 +110,16 @@ object AndroidLint {
         stats: Reporter.Stats,
         issues: util.List[Warning]
     ): Unit = {
-      val errorCount = stats.errorCount
-      val warningCount = stats.warningCount
-
       val short = !client.getFlags.isShowEverything
       val is = issues.asScala.toList
+      val warningCount = stats.errorCount + stats.warningCount
       if (is.isEmpty) {
         s.log.debug("lint found no issues")
       } else {
         val all = is zip (None :: (is map (i => Option(i.issue))))
         all foreach { case (issue, previous) =>
           val b = new StringBuilder
-          val log = issue.severity match {
-            case Severity.FATAL         => s.log.error(_: String)
-            case Severity.ERROR         => s.log.error(_: String)
-            case Severity.WARNING       => s.log.warn(_: String)
-            case Severity.INFORMATIONAL => message => AndroidLog.info(s.log, message)
-            case Severity.IGNORE        => s.log.debug(_: String)
-          }
+          val log = s.log.warn(_: String)
           if (!previous.exists(_ == issue.issue)) {
             explainIssue(issue.issue, log)
           }
@@ -174,15 +162,7 @@ object AndroidLint {
           }
         }
 
-        val errstr = s"lint found ${fmtE(errorCount)}, ${fmtW(warningCount)}"
-        if (strict && errorCount > 0)
-          PluginFail(errstr)
-        else {
-          if (errorCount > 0)
-            s.log.error(errstr)
-          else
-            s.log.warn(s"lint found ${fmtW(warningCount)}")
-        }
+        s.log.warn(s"lint found ${fmtW(warningCount)}")
       }
     }
 
